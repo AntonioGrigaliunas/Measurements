@@ -45,6 +45,27 @@ def random_rotation_matrix(rng: np.random.Generator) -> np.ndarray:
     )
 
 
+def sun_reconstruction_residual(
+    sensor_array,
+    readings: np.ndarray,
+    estimated_sun_body: np.ndarray,
+) -> float:
+    """Return RMS mismatch between measured and reconstructed Sun readings."""
+    ideal_prediction = np.maximum(
+        0.0,
+        sensor_array.sensor_normals @ estimated_sun_body,
+    )
+
+    predicted_readings = (
+        sensor_array.gains * ideal_prediction
+        + sensor_array.offsets
+    )
+    predicted_readings = np.maximum(0.0, predicted_readings)
+
+    residuals = readings - predicted_readings
+    return float(np.sqrt(np.mean(residuals**2)))
+
+
 def run_scenario(
     name: str,
     n_samples: int,
@@ -76,6 +97,7 @@ def run_scenario(
     reliability_scores = []
     consistency_errors = []
     magnetic_norm_errors = []
+    sun_residuals = []
 
     healthy_sun_sensors = 6 if failed_sun_sensor is None else 5
     sun_health_fraction = healthy_sun_sensors / 6.0
@@ -140,16 +162,24 @@ def run_scenario(
             np.linalg.norm(magnetic_measurement) - 1.0
         )
 
+        sun_residual = sun_reconstruction_residual(
+            sun_array,
+            sun_readings,
+            estimated_sun_body,
+        )
+
         reliability, _ = fuzzy_reliability_score(
             sun_health_fraction,
             consistency_error,
             magnetic_norm_error,
+            sun_residual,
         )
 
         attitude_errors.append(attitude_error)
         reliability_scores.append(reliability)
         consistency_errors.append(consistency_error)
         magnetic_norm_errors.append(magnetic_norm_error)
+        sun_residuals.append(sun_residual)
 
     return {
         "name": name,
@@ -157,31 +187,35 @@ def run_scenario(
         "reliability": np.asarray(reliability_scores),
         "consistency_error": np.asarray(consistency_errors),
         "magnetic_norm_error": np.asarray(magnetic_norm_errors),
+        "sun_residual": np.asarray(sun_residuals),
     }
 
 
 def print_summary(results: list[dict[str, np.ndarray | str]]) -> None:
     """Print a compact comparison of fault scenarios."""
-    print("\nFault analysis with fuzzy reliability")
-    print("-------------------------------------")
+    print("\nFault analysis with improved fuzzy reliability")
+    print("----------------------------------------------")
     print(
         "Scenario                 Mean err   95th err   Mean rel.   "
-        "Low rel. (<40)"
+        "Low rel.   Sun residual"
     )
     print(
-        "                         [deg]      [deg]       [%]         [%]"
+        "                         [deg]      [deg]       [%]         "
+        "<40 [%]    RMS"
     )
 
     for result in results:
         errors = result["attitude_error"]
         reliability = result["reliability"]
+        residual = result["sun_residual"]
 
         print(
             f"{str(result['name']):23s} "
             f"{np.mean(errors):9.3f}   "
             f"{np.percentile(errors, 95):9.3f}   "
             f"{np.mean(reliability):9.2f}   "
-            f"{100.0 * np.mean(reliability < 40.0):11.1f}"
+            f"{100.0 * np.mean(reliability < 40.0):8.1f}   "
+            f"{np.mean(residual):12.4f}"
         )
 
 
@@ -286,6 +320,44 @@ def save_reliability_validation_plot(
     plt.close()
 
 
+def save_residual_plot(
+    results: list[dict[str, np.ndarray | str]],
+    output_path: Path,
+) -> None:
+    """Compare Sun reconstruction residuals across fault scenarios."""
+    names = [str(result["name"]) for result in results]
+    mean_residuals = [
+        np.mean(result["sun_residual"])
+        for result in results
+    ]
+
+    plt.figure(figsize=(8, 4.5))
+    bars = plt.bar(
+        names,
+        mean_residuals,
+        color="mediumpurple",
+    )
+    plt.ylabel("Mean Sun reconstruction residual (RMS)")
+    plt.title("Sun-sensor consistency under fault scenarios")
+    plt.xticks(rotation=15)
+    plt.grid(True, axis="y")
+
+    for bar in bars:
+        height = bar.get_height()
+        plt.text(
+            bar.get_x() + bar.get_width() / 2,
+            height,
+            f"{height:.3f}",
+            ha="center",
+            va="bottom",
+            fontsize=9,
+        )
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=200)
+    plt.close()
+
+
 def main() -> None:
     rng = np.random.default_rng(42)
     n_samples = 1000
@@ -332,13 +404,16 @@ def main() -> None:
 
     summary_path = output_dir / "fault_analysis_summary.png"
     validation_path = output_dir / "fuzzy_reliability_validation.png"
+    residual_path = output_dir / "sun_reconstruction_residual.png"
 
     save_summary_plot(results, summary_path)
     save_reliability_validation_plot(results, validation_path)
+    save_residual_plot(results, residual_path)
 
     print("\nSaved figures:")
     print(summary_path)
     print(validation_path)
+    print(residual_path)
 
 
 if __name__ == "__main__":
