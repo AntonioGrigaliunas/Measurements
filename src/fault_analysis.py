@@ -204,16 +204,51 @@ def save_summary_plot(
     width = 0.36
 
     fig, ax1 = plt.subplots(figsize=(9, 5))
-    ax1.bar(x - width / 2, mean_errors, width, label="Mean attitude error [deg]")
+
+    bars1 = ax1.bar(
+        x - width / 2,
+        mean_errors,
+        width,
+        color="steelblue",
+        label="Mean attitude error [deg]",
+    )
     ax1.set_ylabel("Mean attitude error [deg]")
     ax1.set_xticks(x)
     ax1.set_xticklabels(names, rotation=15)
     ax1.grid(True, axis="y")
 
     ax2 = ax1.twinx()
-    ax2.bar(x + width / 2, mean_reliability, width, label="Mean reliability [%]")
+    bars2 = ax2.bar(
+        x + width / 2,
+        mean_reliability,
+        width,
+        color="darkorange",
+        label="Mean reliability [%]",
+    )
     ax2.set_ylabel("Mean fuzzy reliability [%]")
     ax2.set_ylim(0, 100)
+
+    for bar in bars1:
+        height = bar.get_height()
+        ax1.text(
+            bar.get_x() + bar.get_width() / 2,
+            height + 0.3,
+            f"{height:.1f}",
+            ha="center",
+            va="bottom",
+            fontsize=9,
+        )
+
+    for bar in bars2:
+        height = bar.get_height()
+        ax2.text(
+            bar.get_x() + bar.get_width() / 2,
+            height + 1.5,
+            f"{height:.1f}",
+            ha="center",
+            va="bottom",
+            fontsize=9,
+        )
 
     handles1, labels1 = ax1.get_legend_handles_labels()
     handles2, labels2 = ax2.get_legend_handles_labels()
