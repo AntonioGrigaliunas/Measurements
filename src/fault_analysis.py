@@ -18,6 +18,9 @@ from magnetometer import Magnetometer
 from sun_sensor import six_face_sensor_array, unit_vector
 
 
+SUN_SENSOR_NAMES = ["+X", "-X", "+Y", "-Y", "+Z", "-Z"]
+
+
 def random_rotation_matrix(rng: np.random.Generator) -> np.ndarray:
     """Generate one uniformly distributed random 3D rotation matrix."""
     q = rng.normal(size=4)
@@ -69,11 +72,13 @@ def sun_reconstruction_residual(
 def run_scenario(
     name: str,
     n_samples: int,
-    rng: np.random.Generator,
+    seed: int,
     failed_sun_sensor: int | None = None,
     magnetic_disturbance: np.ndarray | None = None,
 ) -> dict[str, np.ndarray | str]:
     """Simulate one healthy/faulted sensor scenario."""
+    rng = np.random.default_rng(seed)
+
     sun_reference = unit_vector(np.array([1.0, 0.4, 0.2]))
     magnetic_reference = unit_vector(np.array([0.2, -0.3, 0.9]))
 
@@ -225,14 +230,8 @@ def save_summary_plot(
 ) -> None:
     """Plot mean attitude error and fuzzy reliability by scenario."""
     names = [str(result["name"]) for result in results]
-    mean_errors = [
-        np.mean(result["attitude_error"])
-        for result in results
-    ]
-    mean_reliability = [
-        np.mean(result["reliability"])
-        for result in results
-    ]
+    mean_errors = [np.mean(result["attitude_error"]) for result in results]
+    mean_reliability = [np.mean(result["reliability"]) for result in results]
 
     x = np.arange(len(names))
     width = 0.36
@@ -326,17 +325,10 @@ def save_residual_plot(
 ) -> None:
     """Compare Sun reconstruction residuals across fault scenarios."""
     names = [str(result["name"]) for result in results]
-    mean_residuals = [
-        np.mean(result["sun_residual"])
-        for result in results
-    ]
+    mean_residuals = [np.mean(result["sun_residual"]) for result in results]
 
     plt.figure(figsize=(8, 4.5))
-    bars = plt.bar(
-        names,
-        mean_residuals,
-        color="mediumpurple",
-    )
+    bars = plt.bar(names, mean_residuals, color="mediumpurple")
     plt.ylabel("Mean Sun reconstruction residual (RMS)")
     plt.title("Sun-sensor consistency under fault scenarios")
     plt.xticks(rotation=15)
@@ -358,32 +350,90 @@ def save_residual_plot(
     plt.close()
 
 
-def main() -> None:
-    rng = np.random.default_rng(42)
-    n_samples = 1000
+def save_all_sun_failures_plot(
+    results: list[dict[str, np.ndarray | str]],
+    output_path: Path,
+) -> None:
+    """Compare the effect of failing each individual Sun sensor."""
+    names = [str(result["name"]) for result in results]
+    mean_errors = [np.mean(result["attitude_error"]) for result in results]
+    p95_errors = [
+        np.percentile(result["attitude_error"], 95)
+        for result in results
+    ]
+    mean_reliability = [np.mean(result["reliability"]) for result in results]
 
+    x = np.arange(len(names))
+
+    fig, ax1 = plt.subplots(figsize=(10, 5.5))
+
+    ax1.plot(
+        x,
+        mean_errors,
+        marker="o",
+        label="Mean attitude error",
+    )
+    ax1.plot(
+        x,
+        p95_errors,
+        marker="s",
+        label="95th-percentile attitude error",
+    )
+    ax1.set_ylabel("Attitude error [deg]")
+    ax1.set_xticks(x)
+    ax1.set_xticklabels(names)
+    ax1.grid(True)
+
+    ax2 = ax1.twinx()
+    ax2.plot(
+        x,
+        mean_reliability,
+        marker="^",
+        linestyle="--",
+        color="darkorange",
+        label="Mean fuzzy reliability",
+    )
+    ax2.set_ylabel("Mean fuzzy reliability [%]")
+    ax2.set_ylim(0, 100)
+
+    handles1, labels1 = ax1.get_legend_handles_labels()
+    handles2, labels2 = ax2.get_legend_handles_labels()
+    ax1.legend(handles1 + handles2, labels1 + labels2, loc="upper right")
+
+    plt.title("Effect of individual Sun-sensor failures")
+    fig.tight_layout()
+    plt.savefig(output_path, dpi=200)
+    plt.close()
+
+
+def main() -> None:
+    n_samples = 1000
+    base_seed = 42
+
+    # Keep the same random attitude/noise sequence for these baseline scenarios
+    # so the fault comparisons are fair.
     results = [
         run_scenario(
             "Healthy",
             n_samples,
-            rng,
+            base_seed,
         ),
         run_scenario(
             "Sun sensor failed",
             n_samples,
-            rng,
+            base_seed,
             failed_sun_sensor=0,
         ),
         run_scenario(
             "Mag disturbance",
             n_samples,
-            rng,
+            base_seed,
             magnetic_disturbance=np.array([0.15, -0.10, 0.08]),
         ),
         run_scenario(
             "Combined fault",
             n_samples,
-            rng,
+            base_seed,
             failed_sun_sensor=0,
             magnetic_disturbance=np.array([0.15, -0.10, 0.08]),
         ),
@@ -399,21 +449,39 @@ def main() -> None:
             f"({reliability_label(mean_score)})"
         )
 
+    print("\nIndividual Sun-sensor failure comparison")
+    print("----------------------------------------")
+    sun_failure_results = []
+
+    for sensor_index, sensor_name in enumerate(SUN_SENSOR_NAMES):
+        result = run_scenario(
+            f"{sensor_name} failed",
+            n_samples,
+            base_seed,
+            failed_sun_sensor=sensor_index,
+        )
+        sun_failure_results.append(result)
+
+    print_summary(sun_failure_results)
+
     output_dir = Path("results") / "figures"
     output_dir.mkdir(parents=True, exist_ok=True)
 
     summary_path = output_dir / "fault_analysis_summary.png"
     validation_path = output_dir / "fuzzy_reliability_validation.png"
     residual_path = output_dir / "sun_reconstruction_residual.png"
+    sun_failure_path = output_dir / "all_sun_sensor_failures.png"
 
     save_summary_plot(results, summary_path)
     save_reliability_validation_plot(results, validation_path)
     save_residual_plot(results, residual_path)
+    save_all_sun_failures_plot(sun_failure_results, sun_failure_path)
 
     print("\nSaved figures:")
     print(summary_path)
     print(validation_path)
     print(residual_path)
+    print(sun_failure_path)
 
 
 if __name__ == "__main__":
