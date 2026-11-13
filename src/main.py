@@ -10,6 +10,14 @@ from attitude_estimation import (
     triad_attitude,
 )
 from magnetometer import Magnetometer
+from sensor_parameters import (
+    MAG_BIAS,
+    MAG_NOISE_STD,
+    MAG_SCALE_FACTORS,
+    SUN_GAINS,
+    SUN_NOISE_STD,
+    SUN_OFFSETS,
+)
 from sun_sensor import six_face_sensor_array, unit_vector
 
 
@@ -31,13 +39,10 @@ def main() -> None:
     true_sun_body = true_rotation @ sun_reference
     true_magnetic_body = true_rotation @ magnetic_reference
 
-    # Sun-sensor model with small calibration mismatch and noise.
-    sun_gains = np.array([1.03, 0.98, 0.96, 1.02, 1.05, 0.97])
-    sun_offsets = np.array([0.010, 0.005, 0.000, 0.008, 0.012, 0.004])
-
+    # Sun-sensor model with centralized hardware-based assumptions.
     sun_array = six_face_sensor_array(
-        gains=sun_gains,
-        offsets=sun_offsets,
+        gains=SUN_GAINS,
+        offsets=SUN_OFFSETS,
     )
 
     sun_readings = sun_array.measure(
@@ -51,10 +56,10 @@ def main() -> None:
         sun_readings,
     )
 
-    # Three-axis magnetometer model with scale-factor mismatch, bias, and noise.
+    # RM3100-class three-axis magnetometer model.
     magnetometer = Magnetometer(
-        scale_factors=np.array([1.01, 0.99, 1.02]),
-        bias=np.array([0.005, -0.004, 0.003]),
+        scale_factors=MAG_SCALE_FACTORS,
+        bias=MAG_BIAS,
     )
 
     magnetic_measurement = magnetometer.measure(
