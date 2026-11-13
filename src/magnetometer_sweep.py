@@ -8,30 +8,39 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 from fault_analysis import run_scenario
+from sensor_parameters import (
+    EARTH_FIELD_UT,
+    MAG_DISTURBANCE_DIRECTION,
+)
 
 
 def run_magnetic_disturbance_sweep(
     n_samples: int = 1000,
-    disturbance_levels_ut: tuple[float, ...] = (0.0, 1.25, 2.5, 3.75, 5.0, 7.5),
+    disturbance_levels_ut: tuple[float, ...] = (
+        0.0,
+        1.25,
+        2.5,
+        3.75,
+        5.0,
+        7.5,
+    ),
     seed: int = 42,
 ) -> list[dict[str, np.ndarray | str | float]]:
     """Sweep magnetic disturbance magnitude along one fixed direction."""
-    direction = np.array([0.15, -0.10, 0.08], dtype=float)
-    direction = direction / np.linalg.norm(direction)
-
     results: list[dict[str, np.ndarray | str | float]] = []
 
-    for level in disturbance_levels:
-        disturbance = level * direction
+    for level_ut in disturbance_levels_ut:
+        normalized_level = level_ut / EARTH_FIELD_UT
+        disturbance = normalized_level * MAG_DISTURBANCE_DIRECTION
 
         result = run_scenario(
-            name=f"Mag dist {level:.2f}",
+            name=f"Mag dist {level_ut:.2f} uT",
             n_samples=n_samples,
             seed=seed,
             magnetic_disturbance=disturbance,
         )
 
-        result["disturbance_level"] = float(level)
+        result["disturbance_ut"] = float(level_ut)
         results.append(result)
 
     return results
@@ -47,7 +56,7 @@ def print_sweep_summary(
         "Disturbance   Mean err   95th err   Mean rel.   Low rel. (<40)"
     )
     print(
-        "[µT]          [deg]      [deg]       [%]         [%]"
+        "[uT]          [deg]      [deg]       [%]         [%]"
     )
 
     for result in results:
@@ -69,8 +78,8 @@ def save_disturbance_sweep_plot(
     output_path: Path,
 ) -> None:
     """Plot attitude error and fuzzy reliability versus magnetic disturbance."""
-    levels = np.array([
-        float(result["disturbance_level"])
+    levels_ut = np.array([
+        float(result["disturbance_ut"])
         for result in results
     ])
     mean_errors = np.array([
@@ -89,26 +98,26 @@ def save_disturbance_sweep_plot(
     fig, ax1 = plt.subplots(figsize=(9, 5.5))
 
     ax1.plot(
-        levels,
+        levels_ut,
         mean_errors,
         marker="o",
         color="steelblue",
         label="Mean attitude error",
     )
     ax1.plot(
-        levels,
+        levels_ut,
         p95_errors,
         marker="s",
         color="slateblue",
         label="95th-percentile attitude error",
     )
-    ax1.set_xlabel("Magnetic disturbance [µT]")
+    ax1.set_xlabel("Magnetic disturbance [microtesla]")
     ax1.set_ylabel("Attitude error [deg]")
     ax1.grid(True)
 
     ax2 = ax1.twinx()
     ax2.plot(
-        levels,
+        levels_ut,
         mean_reliability,
         marker="^",
         linestyle="--",
@@ -133,8 +142,8 @@ def save_low_reliability_plot(
     output_path: Path,
 ) -> None:
     """Plot the fraction of simulations classified as low reliability."""
-    levels = np.array([
-        float(result["disturbance_level"])
+    levels_ut = np.array([
+        float(result["disturbance_ut"])
         for result in results
     ])
     low_fraction = np.array([
@@ -144,12 +153,12 @@ def save_low_reliability_plot(
 
     plt.figure(figsize=(8, 4.5))
     plt.plot(
-        levels,
+        levels_ut,
         low_fraction,
         marker="o",
         color="crimson",
     )
-    plt.xlabel("Magnetic disturbance [µT]")
+    plt.xlabel("Magnetic disturbance [microtesla]")
     plt.ylabel("Low-reliability cases [%]")
     plt.title("Fuzzy fault detection versus magnetic disturbance")
     plt.ylim(0, 100)
