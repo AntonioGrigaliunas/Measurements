@@ -12,7 +12,7 @@ from fault_analysis import run_scenario
 
 def run_magnetic_disturbance_sweep(
     n_samples: int = 1000,
-    disturbance_levels: tuple[float, ...] = (0.0, 0.05, 0.10, 0.15, 0.20, 0.30),
+    disturbance_levels_ut: tuple[float, ...] = (0.0, 1.25, 2.5, 3.75, 5.0, 7.5),
     seed: int = 42,
 ) -> list[dict[str, np.ndarray | str | float]]:
     """Sweep magnetic disturbance magnitude along one fixed direction."""
@@ -47,16 +47,16 @@ def print_sweep_summary(
         "Disturbance   Mean err   95th err   Mean rel.   Low rel. (<40)"
     )
     print(
-        "magnitude     [deg]      [deg]       [%]         [%]"
+        "[µT]          [deg]      [deg]       [%]         [%]"
     )
 
     for result in results:
         errors = result["attitude_error"]
         reliability = result["reliability"]
-        level = float(result["disturbance_level"])
+        level_ut = float(result["disturbance_ut"])
 
         print(
-            f"{level:10.2f}   "
+            f"{level_ut:10.2f}   "
             f"{np.mean(errors):9.3f}   "
             f"{np.percentile(errors, 95):9.3f}   "
             f"{np.mean(reliability):9.2f}   "
@@ -102,7 +102,7 @@ def save_disturbance_sweep_plot(
         color="slateblue",
         label="95th-percentile attitude error",
     )
-    ax1.set_xlabel("Magnetic disturbance magnitude")
+    ax1.set_xlabel("Magnetic disturbance [µT]")
     ax1.set_ylabel("Attitude error [deg]")
     ax1.grid(True)
 
@@ -149,7 +149,7 @@ def save_low_reliability_plot(
         marker="o",
         color="crimson",
     )
-    plt.xlabel("Magnetic disturbance magnitude")
+    plt.xlabel("Magnetic disturbance [µT]")
     plt.ylabel("Low-reliability cases [%]")
     plt.title("Fuzzy fault detection versus magnetic disturbance")
     plt.ylim(0, 100)
