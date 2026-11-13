@@ -55,7 +55,7 @@ def random_rotation_matrices(
 def run_attitude_noise_sensitivity(
     n_samples: int = 1000,
     sun_noise_levels: tuple[float, ...] = (0.0, 0.005, 0.01, 0.02, 0.05),
-    magnetometer_noise_levels: tuple[float, ...] = (0.0, 0.005, 0.01, 0.02),
+    magnetometer_noise_levels: tuple[float, ...] = (\n        0.0,\n        MAG_NOISE_STD / 2.0,\n        MAG_NOISE_STD,\n        2.0 * MAG_NOISE_STD,\n        4.0 * MAG_NOISE_STD,\n    ),
     seed: int = 42,
 ) -> dict[tuple[float, float], np.ndarray]:
     """Return full-attitude error samples for each pair of sensor-noise levels."""
@@ -226,7 +226,7 @@ def main() -> None:
         sensitivity_path,
     )
 
-    selected_case = (0.02, 0.01)
+    selected_case = (0.02, MAG_NOISE_STD)
     histogram_path = output_dir / "attitude_error_histogram.png"
     save_attitude_error_histogram(
         results[selected_case],
