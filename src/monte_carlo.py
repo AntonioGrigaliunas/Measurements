@@ -13,6 +13,13 @@ from attitude_estimation import (
     triad_attitude,
 )
 from magnetometer import Magnetometer
+from sensor_parameters import (
+    MAG_BIAS,
+    MAG_NOISE_STD,
+    MAG_SCALE_FACTORS,
+    SUN_GAINS,
+    SUN_OFFSETS,
+)
 from sun_sensor import six_face_sensor_array, unit_vector
 
 
@@ -55,7 +62,13 @@ def random_rotation_matrices(
 def run_attitude_noise_sensitivity(
     n_samples: int = 1000,
     sun_noise_levels: tuple[float, ...] = (0.0, 0.005, 0.01, 0.02, 0.05),
-    magnetometer_noise_levels: tuple[float, ...] = (\n        0.0,\n        MAG_NOISE_STD / 2.0,\n        MAG_NOISE_STD,\n        2.0 * MAG_NOISE_STD,\n        4.0 * MAG_NOISE_STD,\n    ),
+    magnetometer_noise_levels: tuple[float, ...] = (
+        0.0,
+        MAG_NOISE_STD / 2.0,
+        MAG_NOISE_STD,
+        2.0 * MAG_NOISE_STD,
+        4.0 * MAG_NOISE_STD,
+    ),
     seed: int = 42,
 ) -> dict[tuple[float, float], np.ndarray]:
     """Return full-attitude error samples for each pair of sensor-noise levels."""
@@ -65,19 +78,15 @@ def run_attitude_noise_sensitivity(
     sun_reference = unit_vector(np.array([1.0, 0.4, 0.2]))
     magnetic_reference = unit_vector(np.array([0.2, -0.3, 0.9]))
 
-    # Sun-sensor calibration mismatch.
-    sun_gains = np.array([1.03, 0.98, 0.96, 1.02, 1.05, 0.97])
-    sun_offsets = np.array([0.010, 0.005, 0.000, 0.008, 0.012, 0.004])
-
+    # Centralized sensor calibration assumptions.
     sun_array = six_face_sensor_array(
-        gains=sun_gains,
-        offsets=sun_offsets,
+        gains=SUN_GAINS,
+        offsets=SUN_OFFSETS,
     )
 
-    # Magnetometer scale-factor mismatch and bias.
     magnetometer = Magnetometer(
-        scale_factors=np.array([1.01, 0.99, 1.02]),
-        bias=np.array([0.005, -0.004, 0.003]),
+        scale_factors=MAG_SCALE_FACTORS,
+        bias=MAG_BIAS,
     )
 
     true_rotations = random_rotation_matrices(n_samples, rng)
