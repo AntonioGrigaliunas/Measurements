@@ -1,86 +1,120 @@
-"""Compare ideal and imperfect CubeSat Sun-sensor measurements."""
+"""Demonstrate full 3D CubeSat attitude estimation using two sensors."""
 
 import numpy as np
 
-from attitude_estimation import angular_error_degrees, estimate_sun_vector
+from attitude_estimation import (
+    angular_error_degrees,
+    attitude_error_degrees,
+    estimate_sun_vector,
+    rotation_matrix_from_euler,
+    triad_attitude,
+)
+from magnetometer import Magnetometer
 from sun_sensor import six_face_sensor_array, unit_vector
 
 
-def evaluate_case(
-    name: str,
-    sensor_array,
-    true_sun_vector: np.ndarray,
-    noise_std: float = 0.0,
-    rng: np.random.Generator | None = None,
-) -> None:
-    """Simulate one sensor case and print its Sun-vector estimate."""
-    readings = sensor_array.measure(
-        true_sun_vector,
-        noise_std=noise_std,
-        rng=rng,
-    )
-
-    estimated_sun_vector = estimate_sun_vector(
-        sensor_array.sensor_normals,
-        readings,
-    )
-
-    error_deg = angular_error_degrees(
-        true_sun_vector,
-        estimated_sun_vector,
-    )
-
-    face_names = ["+X", "-X", "+Y", "-Y", "+Z", "-Z"]
-
-    print(f"\n--- {name} ---")
-    print("Sensor readings:")
-    for face, reading in zip(face_names, readings):
-        print(f"{face}: {reading:.4f}")
-
-    print("Estimated Sun vector:")
-    print(np.round(estimated_sun_vector, 4))
-
-    print(f"Angular estimation error: {error_deg:.4f} deg")
-
-
 def main() -> None:
-    # Ground truth used only by the simulation.
-    true_sun_vector = unit_vector(np.array([1.0, 1.0, 0.5]))
-
-    print("True Sun vector:")
-    print(np.round(true_sun_vector, 4))
-
-    # Case 1: perfect sensors.
-    ideal_array = six_face_sensor_array()
-
-    evaluate_case(
-        "Ideal sensors",
-        ideal_array,
-        true_sun_vector,
-    )
-
-    # Case 2: realistic imperfections.
-    #
-    # Gain values represent small sensitivity differences between sensors.
-    # Offset values represent small zero-reading biases.
-    gains = np.array([1.03, 0.98, 0.96, 1.02, 1.05, 0.97])
-    offsets = np.array([0.010, 0.005, 0.000, 0.008, 0.012, 0.004])
-
-    imperfect_array = six_face_sensor_array(
-        gains=gains,
-        offsets=offsets,
-    )
-
-    # Fixed seed makes the example reproducible.
     rng = np.random.default_rng(42)
 
-    evaluate_case(
-        "Imperfect sensors",
-        imperfect_array,
-        true_sun_vector,
+    # Known environmental reference vectors.
+    sun_reference = unit_vector(np.array([1.0, 0.4, 0.2]))
+    magnetic_reference = unit_vector(np.array([0.2, -0.3, 0.9]))
+
+    # Ground-truth CubeSat attitude, known only inside the simulation.
+    true_rotation = rotation_matrix_from_euler(
+        roll_deg=20.0,
+        pitch_deg=-15.0,
+        yaw_deg=35.0,
+    )
+
+    # Convert the known reference vectors into the CubeSat body frame.
+    true_sun_body = true_rotation @ sun_reference
+    true_magnetic_body = true_rotation @ magnetic_reference
+
+    # Sun-sensor model with small calibration mismatch and noise.
+    sun_gains = np.array([1.03, 0.98, 0.96, 1.02, 1.05, 0.97])
+    sun_offsets = np.array([0.010, 0.005, 0.000, 0.008, 0.012, 0.004])
+
+    sun_array = six_face_sensor_array(
+        gains=sun_gains,
+        offsets=sun_offsets,
+    )
+
+    sun_readings = sun_array.measure(
+        true_sun_body,
         noise_std=0.02,
         rng=rng,
     )
+
+    estimated_sun_body = estimate_sun_vector(
+        sun_array.sensor_normals,
+        sun_readings,
+    )
+
+    # Three-axis magnetometer model with scale-factor mismatch, bias, and noise.
+    magnetometer = Magnetometer(
+        scale_factors=np.array([1.01, 0.99, 1.02]),
+        bias=np.array([0.005, -0.004, 0.003]),
+    )
+
+    magnetic_measurement = magnetometer.measure(
+        true_magnetic_body,
+        noise_std=0.01,
+        rng=rng,
+    )
+
+    estimated_magnetic_body = unit_vector(magnetic_measurement)
+
+    # Fuse the two independent vector observations using TRIAD.
+    estimated_rotation = triad_attitude(
+        sun_reference,
+        magnetic_reference,
+        estimated_sun_body,
+        estimated_magnetic_body,
+    )
+
+    sun_error = angular_error_degrees(
+        true_sun_body,
+        estimated_sun_body,
+    )
+
+    magnetic_error = angular_error_degrees(
+        true_magnetic_body,
+        estimated_magnetic_body,
+    )
+
+    attitude_error = attitude_error_degrees(
+        true_rotation,
+        estimated_rotation,
+    )
+
+    print("Reference-frame Sun vector:")
+    print(np.round(sun_reference, 4))
+
+    print("\nReference-frame magnetic vector:")
+    print(np.round(magnetic_reference, 4))
+
+    print("\nTrue body-frame Sun vector:")
+    print(np.round(true_sun_body, 4))
+
+    print("\nEstimated body-frame Sun vector:")
+    print(np.round(estimated_sun_body, 4))
+    print(f"Sun-vector error: {sun_error:.4f} deg")
+
+    print("\nTrue body-frame magnetic vector:")
+    print(np.round(true_magnetic_body, 4))
+
+    print("\nMeasured/estimated magnetic direction:")
+    print(np.round(estimated_magnetic_body, 4))
+    print(f"Magnetic-vector error: {magnetic_error:.4f} deg")
+
+    print("\nTrue body-from-reference rotation matrix:")
+    print(np.round(true_rotation, 4))
+
+    print("\nEstimated body-from-reference rotation matrix:")
+    print(np.round(estimated_rotation, 4))
+
+    print(f"\nFull attitude error: {attitude_error:.4f} deg")
 
 
 if __name__ == "__main__":
