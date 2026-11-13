@@ -120,7 +120,7 @@ def run_scenario(
 
         sun_readings = sun_array.measure(
             true_sun_body,
-            noise_std=0.02,
+            noise_std=SUN_NOISE_STD,
             rng=rng,
         )
 
@@ -129,7 +129,7 @@ def run_scenario(
 
         magnetic_measurement = magnetometer.measure(
             true_magnetic_body,
-            noise_std=0.01,
+            noise_std=MAG_NOISE_STD,
             rng=rng,
         )
         magnetic_measurement = magnetic_measurement + magnetic_disturbance
@@ -428,14 +428,14 @@ def main() -> None:
             "Mag disturbance",
             n_samples,
             base_seed,
-            magnetic_disturbance=np.array([0.15, -0.10, 0.08]),
+            magnetic_disturbance=MAG_FAULT_VECTOR,
         ),
         run_scenario(
             "Combined fault",
             n_samples,
             base_seed,
             failed_sun_sensor=0,
-            magnetic_disturbance=np.array([0.15, -0.10, 0.08]),
+            magnetic_disturbance=MAG_FAULT_VECTOR,
         ),
     ]
 
