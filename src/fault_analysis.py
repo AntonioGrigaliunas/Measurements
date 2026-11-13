@@ -15,6 +15,15 @@ from attitude_estimation import (
 )
 from fuzzy_reliability import fuzzy_reliability_score, reliability_label
 from magnetometer import Magnetometer
+from sensor_parameters import (
+    MAG_BIAS,
+    MAG_FAULT_VECTOR,
+    MAG_NOISE_STD,
+    MAG_SCALE_FACTORS,
+    SUN_GAINS,
+    SUN_NOISE_STD,
+    SUN_OFFSETS,
+)
 from sun_sensor import six_face_sensor_array, unit_vector
 
 
@@ -82,17 +91,14 @@ def run_scenario(
     sun_reference = unit_vector(np.array([1.0, 0.4, 0.2]))
     magnetic_reference = unit_vector(np.array([0.2, -0.3, 0.9]))
 
-    sun_gains = np.array([1.03, 0.98, 0.96, 1.02, 1.05, 0.97])
-    sun_offsets = np.array([0.010, 0.005, 0.000, 0.008, 0.012, 0.004])
-
     sun_array = six_face_sensor_array(
-        gains=sun_gains,
-        offsets=sun_offsets,
+        gains=SUN_GAINS,
+        offsets=SUN_OFFSETS,
     )
 
     magnetometer = Magnetometer(
-        scale_factors=np.array([1.01, 0.99, 1.02]),
-        bias=np.array([0.005, -0.004, 0.003]),
+        scale_factors=MAG_SCALE_FACTORS,
+        bias=MAG_BIAS,
     )
 
     if magnetic_disturbance is None:
