@@ -6,8 +6,8 @@ The model assumes each light sensor follows an ideal cosine response:
 where n_i is the outward unit normal of sensor i and s is the unit Sun vector
 expressed in the CubeSat body frame.
 
-Optional gain, offset, and Gaussian noise terms are included so that later
-project stages can study calibration and robustness.
+Gain, offset, and Gaussian noise terms are included so that the project can
+study calibration errors and measurement uncertainty.
 """
 
 from __future__ import annotations
@@ -92,8 +92,10 @@ class SunSensorArray:
         # Ideal cosine response. Sensors facing away from the Sun read zero.
         ideal_response = np.maximum(0.0, self.sensor_normals @ sun_vector)
 
+        # Static calibration mismatch.
         readings = self.gains * ideal_response + self.offsets
 
+        # Random measurement noise.
         if noise_std > 0:
             if rng is None:
                 rng = np.random.default_rng()
@@ -103,8 +105,11 @@ class SunSensorArray:
         return np.maximum(0.0, readings)
 
 
-def six_face_sensor_array() -> SunSensorArray:
-    """Create one ideal Sun sensor on each face of a cubic CubeSat."""
+def six_face_sensor_array(
+    gains: np.ndarray | None = None,
+    offsets: np.ndarray | None = None,
+) -> SunSensorArray:
+    """Create one Sun sensor on each face of a cubic CubeSat."""
     normals = np.array(
         [
             [1.0, 0.0, 0.0],   # +X
@@ -115,4 +120,4 @@ def six_face_sensor_array() -> SunSensorArray:
             [0.0, 0.0, -1.0],  # -Z
         ]
     )
-    return SunSensorArray(normals)
+    return SunSensorArray(normals, gains=gains, offsets=offsets)
