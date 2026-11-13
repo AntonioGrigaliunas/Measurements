@@ -42,7 +42,7 @@ def main() -> None:
 
     sun_readings = sun_array.measure(
         true_sun_body,
-        noise_std=0.02,
+        noise_std=SUN_NOISE_STD,
         rng=rng,
     )
 
@@ -59,7 +59,7 @@ def main() -> None:
 
     magnetic_measurement = magnetometer.measure(
         true_magnetic_body,
-        noise_std=0.01,
+        noise_std=MAG_NOISE_STD,
         rng=rng,
     )
 
