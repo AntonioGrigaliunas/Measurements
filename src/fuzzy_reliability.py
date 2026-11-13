@@ -4,6 +4,9 @@ The structure follows the course approach:
 1. Crisp sensor-quality indicators -> fuzzy beliefs.
 2. IF-THEN fuzzy rules -> fuzzy reliability decisions.
 3. Weighted-sum defuzzification -> crisp reliability score.
+
+Five output levels are used to reduce the coarse banding produced by a
+three-level Low/Medium/High output.
 """
 
 from __future__ import annotations
@@ -97,43 +100,66 @@ def fuzzy_reliability_score(
     m = beliefs["magnetic"]
     s = beliefs["sun_residual"]
 
-    # AND is implemented with MIN, matching the MA4822 course slides.
-    high_rules = [
+    # AND is implemented with MIN and OR with MAX, following the MA4822 method.
+
+    very_high_rules = [
         min(h["good"], c["good"], m["good"], s["good"]),
     ]
 
-    medium_rules = [
+    high_rules = [
         min(h["degraded"], c["good"], m["good"], s["good"]),
         min(h["good"], c["moderate"], m["good"], s["good"]),
         min(h["good"], c["good"], m["moderate"], s["good"]),
         min(h["good"], c["good"], m["good"], s["moderate"]),
-        min(h["degraded"], c["good"], m["good"], s["moderate"]),
-        min(h["degraded"], c["moderate"], m["good"], s["good"]),
-        min(h["degraded"], c["good"], m["moderate"], s["good"]),
     ]
 
-    # Any clearly poor sensor-quality indicator should lower confidence.
+    medium_rules = [
+        min(h["degraded"], c["moderate"], m["good"], s["good"]),
+        min(h["degraded"], c["good"], m["moderate"], s["good"]),
+        min(h["degraded"], c["good"], m["good"], s["moderate"]),
+        min(h["good"], c["moderate"], m["moderate"], s["good"]),
+        min(h["good"], c["moderate"], m["good"], s["moderate"]),
+        min(h["good"], c["good"], m["moderate"], s["moderate"]),
+    ]
+
     low_rules = [
-        h["poor"],
-        c["poor"],
-        m["poor"],
-        s["poor"],
-        min(h["degraded"], s["moderate"]),
+        min(h["degraded"], s["poor"]),
+        min(c["poor"], m["good"]),
+        min(m["poor"], c["good"]),
+        min(s["poor"], h["good"]),
         min(c["moderate"], m["moderate"]),
         min(c["moderate"], s["moderate"]),
+        min(m["moderate"], s["moderate"]),
+    ]
+
+    very_low_rules = [
+        h["poor"],
+        min(c["poor"], m["moderate"]),
+        min(c["poor"], s["moderate"]),
+        min(m["poor"], c["moderate"]),
+        min(m["poor"], s["moderate"]),
+        min(s["poor"], c["moderate"]),
+        min(s["poor"], m["moderate"]),
+        min(c["poor"], m["poor"]),
+        min(c["poor"], s["poor"]),
+        min(m["poor"], s["poor"]),
     ]
 
     possibilities = {
+        "very_low": max(very_low_rules),
         "low": max(low_rules),
         "medium": max(medium_rules),
         "high": max(high_rules),
+        "very_high": max(very_high_rules),
     }
 
-    # Weighted-sum defuzzification using representative crisp values.
+    # Five representative crisp output values for weighted-sum defuzzification.
     output_values = {
-        "low": 20.0,
-        "medium": 60.0,
-        "high": 90.0,
+        "very_low": 10.0,
+        "low": 30.0,
+        "medium": 50.0,
+        "high": 70.0,
+        "very_high": 90.0,
     }
 
     denominator = sum(possibilities.values())
@@ -150,9 +176,13 @@ def fuzzy_reliability_score(
 
 
 def reliability_label(score: float) -> str:
-    """Convert the crisp reliability score into a readable label."""
+    """Convert the crisp reliability score into a five-level readable label."""
+    if score < 20.0:
+        return "Very Low"
     if score < 40.0:
         return "Low"
-    if score < 75.0:
+    if score < 60.0:
         return "Medium"
-    return "High"
+    if score < 80.0:
+        return "High"
+    return "Very High"
