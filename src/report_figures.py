@@ -19,6 +19,7 @@ from automatic_reconfiguration_analysis import (
 )
 from final_system_analysis import run_sequence
 from monte_carlo import run_attitude_noise_sensitivity
+from sensor_parameters import MAG_NOISE_STD
 
 
 OUTPUT_DIR = Path("figures")
@@ -39,11 +40,16 @@ def save_noise_sensitivity() -> None:
             float(np.mean(results[(sun_noise, mag_noise)]))
             for sun_noise in sun_levels
         ]
+        multiplier = (
+            mag_noise / MAG_NOISE_STD
+            if MAG_NOISE_STD > 0
+            else 0.0
+        )
         axes[0].plot(
             sun_levels,
             mean_errors,
             marker="o",
-            label=f"{mag_noise:.6f}",
+            label=f"{multiplier:g}x nominal",
         )
 
     axes[0].set_xlabel("Sun-sensor noise standard deviation")
@@ -51,10 +57,19 @@ def save_noise_sensitivity() -> None:
     axes[0].set_title("Sensitivity to Sun-sensor noise")
     axes[0].grid(True, alpha=0.3)
     axes[0].legend(
-        title="Mag noise std.",
+        title="Magnetometer noise",
         fontsize=8,
         title_fontsize=8,
     )
+
+    mag_multipliers = [
+        (
+            mag_noise / MAG_NOISE_STD
+            if MAG_NOISE_STD > 0
+            else 0.0
+        )
+        for mag_noise in mag_levels
+    ]
 
     for sun_noise in sun_levels:
         mean_errors = [
@@ -62,13 +77,13 @@ def save_noise_sensitivity() -> None:
             for mag_noise in mag_levels
         ]
         axes[1].plot(
-            mag_levels,
+            mag_multipliers,
             mean_errors,
             marker="o",
             label=f"{sun_noise:.3f}",
         )
 
-    axes[1].set_xlabel("Magnetometer noise standard deviation")
+    axes[1].set_xlabel("Magnetometer noise [x nominal RM3100]")
     axes[1].set_ylabel("Mean attitude error [deg]")
     axes[1].set_title("Sensitivity to magnetometer noise")
     axes[1].grid(True, alpha=0.3)
