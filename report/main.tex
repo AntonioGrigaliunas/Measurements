@@ -10,7 +10,7 @@
 \usepackage{float}
 \usepackage[hidelinks]{hyperref}
 
-\title{Intelligent Multi-Sensor Attitude Determination and Reliability Assessment for a CubeSat}
+\title{Reliability-Aware Self-Reconfiguring Attitude Determination for a CubeSat}
 \author{Antonio Grigaliunas}
 \date{}
 
@@ -31,17 +31,18 @@
 
 \section{Motivation: Users and Their Needs}
 
-Small satellites require knowledge of their orientation in space in order to perform mission functions such as pointing antennas, orienting payloads, managing power generation, and supporting autonomous attitude-control functions. For a CubeSat, this attitude information must be obtained using sensors that are compact, low-power, low-cost, and sufficiently robust for autonomous operation.
+Small satellites require reliable knowledge of their orientation in order to point antennas and payloads, manage solar-power generation, and support autonomous attitude control. CubeSat missions must obtain this information with sensors and processors that are compact, low-power, low-cost, and able to continue operating when measurements become unreliable.
 
-The primary users considered in this project are CubeSat mission designers and operators who require a simple attitude-determination subsystem that can estimate the spacecraft orientation and, at the same time, indicate whether that estimate should be trusted. This second requirement is important because an attitude estimate can become inaccurate when a sensor is noisy, biased, disturbed, or fails completely.
+The primary users considered in this project are CubeSat mission designers and operators who need an attitude-determination subsystem that does more than return an orientation estimate. A conventional estimator may continue producing a numerical attitude even after a Sun sensor has failed or the magnetometer has been disturbed. From the user's perspective, the more useful system is one that can identify abnormal measurements, preserve useful sensing functions when possible, and clearly indicate the confidence of its output.
 
-The proposed system therefore addresses two user needs:
+The proposed system therefore addresses three user needs:
 \begin{enumerate}
-    \item estimate the three-dimensional CubeSat attitude using low-cost complementary sensors; and
-    \item provide an interpretable reliability score that warns when the attitude estimate is likely to be degraded.
+    \item estimate the three-dimensional CubeSat attitude using low-cost Sun and magnetic sensors;
+    \item detect important sensor faults and autonomously reconfigure the estimator or degrade to a safe sensing mode instead of blindly using corrupted data; and
+    \item provide an interpretable reliability score that communicates the quality of the current sensor solution.
 \end{enumerate}
 
-The project is sensor-centric because the autonomy of the proposed system depends directly on the quality, fusion, and interpretation of the Sun-sensor and magnetometer measurements.
+The project is sensor-centric because the autonomy of the proposed system is created directly from measurement geometry, sensor consistency checks, fault memory, adaptive use of the available sensor channels, and fuzzy interpretation of measurement quality.
 
 \section{Literature Survey}
 
@@ -79,7 +80,14 @@ Attitude estimation alone does not indicate whether the underlying sensor measur
 
 Fuzzy logic provides a convenient way of combining several uncertain indicators without requiring a precise probabilistic model of every possible fault. Fuzzy inference systems have previously been applied to sensor-fault detection by converting measurement discrepancies or residuals into fuzzy conditions and combining them through interpretable rules \cite{khan2012fuzzyfault}. Such an approach is well suited to the current problem because the available indicators---for example vector-consistency error, magnetometer magnitude error, Sun-sensor reconstruction residual, and the number of healthy sensors---do not individually provide a definitive measure of attitude quality.
 
-The proposed work therefore extends the conventional Sun--magnetic attitude-determination architecture by adding a separate fuzzy reliability layer. The attitude estimate itself is still obtained using TRIAD, while the fuzzy system evaluates measurement quality and produces a reliability score. In this way, the project does not attempt to replace the attitude estimator with fuzzy logic; instead, fuzzy reasoning is used as an interpretable health-assessment mechanism for the sensor-derived attitude solution.
+The present project retains this interpretable fuzzy confidence layer, but uses it together with explicit fault-detection and reconfiguration logic rather than treating fuzzy logic as the only protection mechanism.
+
+
+\subsection{Fault-Tolerant Reconfiguration}
+
+Fault-tolerant attitude determination extends sensor fusion by deciding how the estimator should respond when its inputs are no longer trustworthy. Colagrossi and Lavagna proposed a fault-tolerant attitude and orbit determination architecture for small satellites with embedded failure detection and isolation, autonomous management of redundant measurements, reconfiguration of the estimation functions, and transitions to compatible safe modes when the nominal solution cannot be maintained \cite{colagrossi2022faulttolerant}. Their architecture explicitly includes sensor exclusion after confirmed failures and a transition from full attitude determination to Sun-direction estimation when the available measurements are insufficient for a trustworthy full solution.
+
+This failure-detection--isolation--recovery philosophy motivates the architecture developed in this project, but the implementation is deliberately simpler and focused on the sensing concepts taught in MA4822. Instead of relying on redundant high-performance attitude sensors or a dynamic Kalman-filter architecture, the proposed method exploits the geometry of six coarse Sun sensors, the unit-length constraint of the Sun vector, consistency with the magnetic reference vector, short-term fault memory, and a dedicated magnetic-health gate. The contribution of the project is therefore a lightweight sensor-level demonstration of self-reconfiguration and graceful degradation using low-cost CubeSat sensing hardware, with fuzzy logic retained as an interpretable confidence output rather than as the sole fault detector.
 
 \section{Description of Proposed Solution}
 
