@@ -296,18 +296,31 @@ def autonomous_attitude_solution(
 
 
 class AutonomousAttitudeManager:
-    """Stateful attitude manager with persistent Sun-sensor fault memory."""
+    """Stateful attitude manager with persistent Sun-sensor fault memory.
+
+    A current detector hit can trigger immediate reconfiguration for that
+    sample. Persistent memory is more conservative: the same sensor must be
+    detected several times within a rolling confirmation window. This prevents
+    rare isolated false alarms from accumulating indefinitely during long
+    missions.
+
+    Once a hard fault is latched, it remains latched until reset().
+    """
 
     def __init__(
         self,
-        confirmations_required: int = 2,
+        confirmations_required: int = 3,
+        confirmation_window: int = 20,
         gains: np.ndarray = SUN_GAINS,
         offsets: np.ndarray = SUN_OFFSETS,
     ) -> None:
         if confirmations_required < 1:
             raise ValueError("confirmations_required must be at least 1.")
+        if confirmation_window < 1:
+            raise ValueError("confirmation_window must be at least 1.")
 
         self.confirmations_required = int(confirmations_required)
+        self.confirmation_window = int(confirmation_window)
         self.gains = np.asarray(gains, dtype=float)
         self.offsets = np.asarray(offsets, dtype=float)
         self.reset()
@@ -315,26 +328,35 @@ class AutonomousAttitudeManager:
     def reset(self) -> None:
         """Clear all remembered fault state."""
         self.latched_failed_sun_sensor: int | None = None
-        self._candidate_sensor: int | None = None
-        self._candidate_count = 0
+        self._sample_index = -1
+        self._detection_history: list[tuple[int, int]] = []
 
     def _update_fault_memory(self, detected_sensor: int | None) -> None:
+        self._sample_index += 1
+
+        # Keep only recent evidence. Old isolated false alarms expire.
+        oldest_allowed = self._sample_index - self.confirmation_window + 1
+        self._detection_history = [
+            (sample, sensor)
+            for sample, sensor in self._detection_history
+            if sample >= oldest_allowed
+        ]
+
         if self.latched_failed_sun_sensor is not None:
             return
 
-        if detected_sensor is None:
-            return
+        if detected_sensor is not None:
+            self._detection_history.append(
+                (self._sample_index, int(detected_sensor))
+            )
 
-        detected_sensor = int(detected_sensor)
+        counts = np.zeros(6, dtype=int)
+        for _, sensor in self._detection_history:
+            if 0 <= sensor < 6:
+                counts[sensor] += 1
 
-        if self._candidate_sensor == detected_sensor:
-            self._candidate_count += 1
-        else:
-            self._candidate_sensor = detected_sensor
-            self._candidate_count = 1
-
-        if self._candidate_count >= self.confirmations_required:
-            self.latched_failed_sun_sensor = detected_sensor
+        if np.max(counts) >= self.confirmations_required:
+            self.latched_failed_sun_sensor = int(np.argmax(counts))
 
     def update(
         self,
@@ -369,10 +391,19 @@ class AutonomousAttitudeManager:
             remembered_failed_sun_sensor=self.latched_failed_sun_sensor,
         )
 
+        recent_counts = np.zeros(6, dtype=int)
+        for _, sensor in self._detection_history:
+            if 0 <= sensor < 6:
+                recent_counts[sensor] += 1
+
         solution["latched_failed_sun_sensor"] = (
             self.latched_failed_sun_sensor
         )
-        solution["fault_candidate_sensor"] = self._candidate_sensor
-        solution["fault_candidate_count"] = self._candidate_count
+        solution["fault_evidence_counts"] = recent_counts.copy()
+        solution["fault_confirmation_window"] = self.confirmation_window
+        solution["fault_confirmations_required"] = (
+            self.confirmations_required
+        )
 
         return solution
+
