@@ -35,6 +35,141 @@ def estimate_sun_vector(
     return unit_vector(estimated_raw)
 
 
+
+def estimate_sun_vector_reconfigured(
+    sensor_normals: np.ndarray,
+    readings: np.ndarray,
+    healthy_mask: np.ndarray,
+    gains: np.ndarray | None = None,
+    offsets: np.ndarray | None = None,
+    dark_threshold: float = 0.08,
+) -> np.ndarray:
+    """Estimate the Sun direction after a known Sun-sensor channel failure.
+
+    This routine is specialized for the six-face +/-X, +/-Y, +/-Z CubeSat
+    geometry. Healthy measurements are first corrected for known gain/offset
+    calibration. For an axis whose opposite-face pair is fully healthy, the
+    signed component is reconstructed from the difference of the two readings.
+
+    If exactly one face has failed and the surviving opposite face is dark, the
+    missing component is recovered from the unit-vector constraint. Its sign is
+    inferred from the failed face: e.g. if +X failed while -X is dark, the Sun
+    is assumed to lie on the +X side.
+
+    Parameters
+    ----------
+    sensor_normals:
+        Six body-frame face normals in the order +/-X, +/-Y, +/-Z.
+    readings:
+        Six non-negative sensor measurements.
+    healthy_mask:
+        Boolean array; False marks a failed/unusable channel.
+    gains, offsets:
+        Optional per-channel calibration values.
+    dark_threshold:
+        Corrected signal below this value is treated as effectively dark when
+        only one sensor of an opposing pair remains available.
+    """
+    sensor_normals = np.asarray(sensor_normals, dtype=float)
+    readings = np.asarray(readings, dtype=float)
+    healthy_mask = np.asarray(healthy_mask, dtype=bool)
+
+    if sensor_normals.shape != (6, 3):
+        raise ValueError(
+            "Reconfigured estimator requires the six-face (6, 3) geometry."
+        )
+    if readings.shape != (6,) or healthy_mask.shape != (6,):
+        raise ValueError("readings and healthy_mask must each contain 6 values.")
+    if np.count_nonzero(healthy_mask) < 5:
+        raise ValueError(
+            "This first reconfiguration method supports at most one failed "
+            "Sun-sensor channel."
+        )
+
+    if gains is None:
+        gains = np.ones(6)
+    if offsets is None:
+        offsets = np.zeros(6)
+
+    gains = np.asarray(gains, dtype=float)
+    offsets = np.asarray(offsets, dtype=float)
+    if gains.shape != (6,) or offsets.shape != (6,):
+        raise ValueError("gains and offsets must each contain 6 values.")
+
+    corrected = np.maximum(0.0, (readings - offsets) / gains)
+
+    # Verify the expected face ordering before using pair-based reconstruction.
+    expected_normals = np.array(
+        [
+            [1.0, 0.0, 0.0],
+            [-1.0, 0.0, 0.0],
+            [0.0, 1.0, 0.0],
+            [0.0, -1.0, 0.0],
+            [0.0, 0.0, 1.0],
+            [0.0, 0.0, -1.0],
+        ]
+    )
+    if not np.allclose(sensor_normals, expected_normals, atol=1e-8):
+        raise ValueError(
+            "Reconfigured estimator currently expects normals ordered as "
+            "+X, -X, +Y, -Y, +Z, -Z."
+        )
+
+    components = np.zeros(3)
+    unresolved: list[tuple[int, float]] = []
+    pairs = [(0, 1), (2, 3), (4, 5)]
+
+    for axis, (positive_index, negative_index) in enumerate(pairs):
+        positive_healthy = healthy_mask[positive_index]
+        negative_healthy = healthy_mask[negative_index]
+
+        if positive_healthy and negative_healthy:
+            components[axis] = (
+                corrected[positive_index] - corrected[negative_index]
+            )
+            continue
+
+        if positive_healthy and not negative_healthy:
+            # If +axis is illuminated, its reading directly gives the signed
+            # component. Otherwise the failed -axis face is assumed sunward.
+            if corrected[positive_index] > dark_threshold:
+                components[axis] = corrected[positive_index]
+            else:
+                unresolved.append((axis, -1.0))
+            continue
+
+        if negative_healthy and not positive_healthy:
+            if corrected[negative_index] > dark_threshold:
+                components[axis] = -corrected[negative_index]
+            else:
+                unresolved.append((axis, 1.0))
+            continue
+
+        raise ValueError("Both sensors of one opposing face pair are unavailable.")
+
+    if len(unresolved) > 1:
+        raise ValueError(
+            "More than one Sun-vector component is unresolved; a more general "
+            "fault-tolerant estimator is required."
+        )
+
+    if len(unresolved) == 1:
+        axis, sign = unresolved[0]
+        known_axes = [index for index in range(3) if index != axis]
+        known_squared = float(np.sum(components[known_axes] ** 2))
+
+        # With noisy measurements the known components can occasionally imply
+        # a magnitude slightly above one. In that case, leave the missing
+        # component at zero and normalize the measured components.
+        missing_magnitude = np.sqrt(max(0.0, 1.0 - known_squared))
+        components[axis] = sign * missing_magnitude
+
+    if np.linalg.norm(components) == 0:
+        raise ValueError("Reconfigured Sun-vector estimate contains no direction.")
+
+    return unit_vector(components)
+
+
 def angular_error_degrees(
     true_vector: np.ndarray,
     estimated_vector: np.ndarray,
