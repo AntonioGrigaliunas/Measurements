@@ -74,11 +74,9 @@ def run_attitude_noise_sensitivity(
     """Return full-attitude error samples for each pair of sensor-noise levels."""
     rng = np.random.default_rng(seed)
 
-    # Fixed environmental directions in the reference frame.
     sun_reference = unit_vector(np.array([1.0, 0.4, 0.2]))
     magnetic_reference = unit_vector(np.array([0.2, -0.3, 0.9]))
 
-    # Centralized sensor calibration assumptions.
     sun_array = six_face_sensor_array(
         gains=SUN_GAINS,
         offsets=SUN_OFFSETS,
@@ -150,18 +148,18 @@ def print_summary(
     print("\nMonte Carlo full-attitude sensitivity results")
     print("--------------------------------------------")
     print(
-        "Sun noise   Mag noise   Mean error   Std dev   "
+        "Sun noise   Mag noise     Mean error   Std dev   "
         "95th pct   Max error"
     )
     print(
-        "                        [deg]        [deg]     "
+        "                          [deg]        [deg]     "
         "[deg]      [deg]"
     )
 
     for (sun_noise, mag_noise), errors in results.items():
         print(
             f"{sun_noise:8.3f}   "
-            f"{mag_noise:8.3f}   "
+            f"{mag_noise:10.6f}   "
             f"{np.mean(errors):10.4f}   "
             f"{np.std(errors):7.4f}   "
             f"{np.percentile(errors, 95):8.4f}   "
@@ -188,7 +186,7 @@ def save_noise_sensitivity_plot(
             sun_levels,
             mean_errors,
             marker="o",
-            label=f"Mag noise = {mag_noise:.3f}",
+            label=f"Mag noise = {mag_noise:.6f}",
         )
 
     plt.xlabel("Sun-sensor noise standard deviation")
@@ -214,7 +212,7 @@ def save_attitude_error_histogram(
     plt.ylabel("Number of simulations")
     plt.title(
         "Attitude-error distribution "
-        f"(Sun noise={sun_noise:.3f}, Mag noise={mag_noise:.3f})"
+        f"(Sun noise={sun_noise:.3f}, Mag noise={mag_noise:.6f})"
     )
     plt.tight_layout()
     plt.savefig(output_path, dpi=200)
