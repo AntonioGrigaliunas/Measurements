@@ -18,9 +18,74 @@ from automatic_reconfiguration_analysis import (
     run_failed_sensor_case,
 )
 from final_system_analysis import run_sequence
+from monte_carlo import run_attitude_noise_sensitivity
 
 
 OUTPUT_DIR = Path("figures")
+
+
+
+def save_noise_sensitivity() -> None:
+    """Plot baseline attitude sensitivity to both sensor-noise sources."""
+    results = run_attitude_noise_sensitivity()
+
+    sun_levels = sorted({key[0] for key in results})
+    mag_levels = sorted({key[1] for key in results})
+
+    fig, axes = plt.subplots(1, 2, figsize=(10.2, 4.4))
+
+    for mag_noise in mag_levels:
+        mean_errors = [
+            float(np.mean(results[(sun_noise, mag_noise)]))
+            for sun_noise in sun_levels
+        ]
+        axes[0].plot(
+            sun_levels,
+            mean_errors,
+            marker="o",
+            label=f"{mag_noise:.6f}",
+        )
+
+    axes[0].set_xlabel("Sun-sensor noise standard deviation")
+    axes[0].set_ylabel("Mean attitude error [deg]")
+    axes[0].set_title("Sensitivity to Sun-sensor noise")
+    axes[0].grid(True, alpha=0.3)
+    axes[0].legend(
+        title="Mag noise std.",
+        fontsize=8,
+        title_fontsize=8,
+    )
+
+    for sun_noise in sun_levels:
+        mean_errors = [
+            float(np.mean(results[(sun_noise, mag_noise)]))
+            for mag_noise in mag_levels
+        ]
+        axes[1].plot(
+            mag_levels,
+            mean_errors,
+            marker="o",
+            label=f"{sun_noise:.3f}",
+        )
+
+    axes[1].set_xlabel("Magnetometer noise standard deviation")
+    axes[1].set_ylabel("Mean attitude error [deg]")
+    axes[1].set_title("Sensitivity to magnetometer noise")
+    axes[1].grid(True, alpha=0.3)
+    axes[1].legend(
+        title="Sun noise std.",
+        fontsize=8,
+        title_fontsize=8,
+    )
+
+    fig.suptitle("Baseline TRIAD sensitivity to sensor noise")
+    fig.tight_layout()
+    fig.savefig(
+        OUTPUT_DIR / "final_noise_sensitivity.png",
+        dpi=300,
+        bbox_inches="tight",
+    )
+    plt.close(fig)
 
 
 def save_automatic_reconfiguration_comparison() -> None:
@@ -201,6 +266,7 @@ def save_persistent_memory_comparison(
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
+    save_noise_sensitivity()
     save_automatic_reconfiguration_comparison()
     results = final_sequences()
     save_post_fault_modes(results)
