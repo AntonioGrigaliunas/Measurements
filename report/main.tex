@@ -369,6 +369,23 @@ The estimator parameters and decision thresholds are frozen before generating th
 
 The final temporal validation preserves the nominal accuracy of the original sensor-fusion system. In the healthy sequence, the system remains in \texttt{NORMAL} mode for 99.2\% of the post-injection comparison interval, produces full attitude for 99.6\% of the samples, and gives a mean full-attitude error of \SI{2.337}{\degree}. The 95th-percentile error is \SI{4.476}{\degree}. Thus, the added autonomy logic does not materially degrade the baseline attitude solution.
 
+\subsection{Sensor-Noise Sensitivity}
+
+Before analysing explicit faults, the baseline TRIAD estimator was evaluated over a grid of Sun-sensor and magnetometer random-noise levels. This separates ordinary measurement uncertainty from the larger hard-fault cases considered later.
+
+\IfFileExists{figures/final_noise_sensitivity.png}{
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.95\textwidth]{figures/final_noise_sensitivity.png}
+    \caption{Sensitivity of the baseline full-attitude estimate to Sun-sensor and magnetometer random noise. The left panel varies Sun-sensor noise for the tested magnetometer-noise levels, while the right panel shows the corresponding dependence on magnetometer noise.}
+    \label{fig:noise-sensitivity}
+\end{figure}
+}{}
+
+At the nominal RM3100-class magnetometer-noise level, increasing the normalized Sun-sensor noise standard deviation from 0 to 0.05 increases the mean full-attitude error from approximately \SI{1.57}{\degree} to \SI{4.64}{\degree}. The nominal Sun-noise case of 0.02 gives approximately \SI{2.32}{\degree} mean error, consistent with the healthy-system results reported above.
+
+Over the much smaller intrinsic magnetometer-noise range tested here, changing the magnetometer random-noise level has comparatively little effect on the mean attitude error. This indicates that the nominal estimator is more sensitive to the coarse Sun-vector reconstruction than to the intrinsic RM3100-class random noise. This does not mean magnetic faults are unimportant: the later magnetic-fault study applies a much larger spacecraft-generated disturbance, which is handled by the dedicated magnetic-health gate and transition to \texttt{SUN\_SAFE} mode.
+
 \subsection{Automatic Sun-Sensor Detection and Reconfiguration}
 
 A complete zero-output failure was injected independently into each of the six Sun-sensor faces. Figure~\ref{fig:reconfiguration} compares the standard estimator, the automatic detector/reconfiguration method, and a known-fault benchmark in which the failed face is supplied directly to the estimator.
