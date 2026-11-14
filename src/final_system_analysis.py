@@ -86,7 +86,10 @@ def run_sequence(
     magnetic_reference = unit_vector(np.array([0.2, -0.3, 0.9]))
 
     sun_array, magnetometer = make_models()
-    manager = AutonomousAttitudeManager(confirmations_required=2)
+    manager = AutonomousAttitudeManager(
+        confirmations_required=3,
+        confirmation_window=20,
+    )
 
     modes = []
     reliabilities = []
@@ -184,6 +187,16 @@ def run_sequence(
 
     post_fault_modes = Counter(modes[fault_start:])
     post_fault_reliability = reliabilities_array[fault_start:]
+    post_fault_errors = np.asarray(
+        [
+            error
+            for sample, error in zip(error_samples, attitude_errors)
+            if sample >= fault_start
+        ],
+        dtype=float,
+    )
+    post_fault_full_outputs = int(post_fault_errors.size)
+    post_fault_unsafe_outputs = int(np.sum(post_fault_errors > 10.0))
 
     result: dict[str, object] = {
         "name": name,
@@ -211,6 +224,22 @@ def run_sequence(
         "post_fault_mean_reliability": float(
             np.mean(post_fault_reliability)
         ),
+        "post_fault_full_attitude_fraction": (
+            post_fault_full_outputs / (n_samples - fault_start)
+        ),
+        "post_fault_mean_attitude_error": (
+            float(np.mean(post_fault_errors))
+            if post_fault_errors.size
+            else np.nan
+        ),
+        "post_fault_p95_attitude_error": (
+            float(np.percentile(post_fault_errors, 95))
+            if post_fault_errors.size
+            else np.nan
+        ),
+        "post_fault_unsafe_fraction": (
+            post_fault_unsafe_outputs / (n_samples - fault_start)
+        ),
         "latch_sample": latch_sample,
     }
 
@@ -223,16 +252,8 @@ def run_sequence(
             stateless_sun_fault_unsafe
             / (n_samples - fault_start)
         )
-        result["persistent_post_fault_unsafe_fraction"] = (
-            sum(
-                1
-                for sample, error in zip(
-                    result["error_samples"],
-                    result["attitude_errors"],
-                )
-                if sample >= fault_start and error > 10.0
-            )
-            / (n_samples - fault_start)
+        result["persistent_post_fault_unsafe_fraction"] = float(
+            result["post_fault_unsafe_fraction"]
         )
 
     return result
@@ -265,6 +286,33 @@ def print_summary(results: list[dict[str, object]]) -> None:
             f"{float(result['p95_attitude_error']):7.3f}  "
             f"{100*float(result['unsafe_output_fraction']):8.2f}  "
             f"{float(result['mean_reliability']):8.2f}"
+        )
+
+    print("\nPost-fault operating performance")
+    print("--------------------------------")
+    print(
+        "Scenario       NORMAL  RECONFIG  SUN_SAFE  SAFE   Full att.  "
+        "Mean err  P95 err  Unsafe>10  Mean rel."
+    )
+    print(
+        "                 [%]      [%]       [%]     [%]      [%]      "
+        "[deg]     [deg]      [%]       [%]"
+    )
+
+    for result in results:
+        n_post = int(result["n_samples"]) - int(result["fault_start"])
+        modes = result["post_fault_modes"]
+        print(
+            f"{str(result['name']):13s} "
+            f"{100*modes['NORMAL']/n_post:7.1f}  "
+            f"{100*modes['RECONFIGURED']/n_post:8.1f}  "
+            f"{100*modes['SUN_SAFE']/n_post:8.1f}  "
+            f"{100*modes['SAFE']/n_post:5.1f}  "
+            f"{100*float(result['post_fault_full_attitude_fraction']):8.1f}  "
+            f"{float(result['post_fault_mean_attitude_error']):8.3f}  "
+            f"{float(result['post_fault_p95_attitude_error']):7.3f}  "
+            f"{100*float(result['post_fault_unsafe_fraction']):8.2f}  "
+            f"{float(result['post_fault_mean_reliability']):8.2f}"
         )
 
     sun_result = next(
