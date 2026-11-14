@@ -93,292 +93,249 @@ This failure-detection--isolation--recovery philosophy motivates the architectur
 
 \subsection{System Architecture}
 
-The proposed attitude-determination system combines:
-\begin{itemize}
-    \item six coarse Sun sensors mounted on the $\pm X$, $\pm Y$, and $\pm Z$ faces of the CubeSat;
-    \item one three-axis magnetometer;
-    \item a TRIAD attitude-estimation algorithm; and
-    \item a fuzzy-logic reliability layer.
-\end{itemize}
+The proposed system is a self-aware attitude-determination architecture built around six coarse Sun sensors, a three-axis magnetometer, TRIAD, explicit fault-detection logic, persistent fault memory, autonomous estimator reconfiguration, and a fuzzy confidence layer.
 
-The sensor measurements are first converted into two estimated body-frame reference directions: the Sun direction $\hat{\mathbf{s}}_b$ and the geomagnetic-field direction $\hat{\mathbf{m}}_b$. Their corresponding reference-frame directions, $\mathbf{s}_r$ and $\mathbf{m}_r$, are assumed known. TRIAD then estimates the body-from-reference rotation matrix $\hat{\mathbf{R}}$.
+The important distinction from the baseline attitude estimator is that measurements are not always passed directly to TRIAD. The Sun-sensor channels are first checked for a hard failure, previously confirmed failures are remembered, and the Sun-vector estimator is reconfigured when required. The reconstructed Sun direction is then used together with the magnetometer to assess whether full attitude determination is safe. If the magnetometer is inconsistent with the expected field geometry, full TRIAD attitude is intentionally withheld and the system enters a Sun-safe mode.
 
-In parallel, four measurement-quality indicators are evaluated and passed to a fuzzy inference system. The fuzzy system outputs a reliability score between 0 and 100\%, allowing the attitude estimate and its estimated trustworthiness to be reported together.
+\begin{figure}[H]
+\centering
+\begin{tabular}{c}
+\fbox{\parbox{0.78\textwidth}{\centering Six coarse Sun sensors + three-axis magnetometer}}\\[0.7em]
+$\downarrow$\\[-0.1em]
+\fbox{\parbox{0.78\textwidth}{\centering Sun-sensor fault detection + persistent fault memory}}\\[0.7em]
+$\downarrow$\\[-0.1em]
+\fbox{\parbox{0.78\textwidth}{\centering Normal or reconfigured Sun-vector reconstruction}}\\[0.7em]
+$\downarrow$\\[-0.1em]
+\fbox{\parbox{0.78\textwidth}{\centering Magnetometer health gate from magnitude and Sun--magnetic consistency}}\\[0.7em]
+$\downarrow$\\[-0.1em]
+\fbox{\parbox{0.78\textwidth}{\centering NORMAL / RECONFIGURED / SUN\_SAFE / SAFE mode selection}}\\[0.7em]
+$\downarrow$\\[-0.1em]
+\fbox{\parbox{0.78\textwidth}{\centering TRIAD when full attitude is trusted + fuzzy confidence score}}
+\end{tabular}
+\caption{Processing architecture of the proposed self-reconfiguring attitude-determination system.}
+\label{fig:architecture}
+\end{figure}
 
 \subsection{Six-Face Sun-Sensor Model}
 
-Each Sun sensor has a unit surface normal $\mathbf{n}_i$. The ideal normalized response is modelled as
+Each Sun sensor has an outward unit normal $\mathbf{n}_i$. The ideal normalized response is
 \begin{equation}
     I_i = \max\left(0,\mathbf{n}_i^\mathsf{T}\mathbf{s}_b\right),
 \end{equation}
-where $\mathbf{s}_b$ is the true Sun direction expressed in the CubeSat body frame. The $\max(0,\cdot)$ operation represents the fact that a sensor on the opposite side of the spacecraft cannot receive direct sunlight.
-
-Measurement imperfections are represented by
+where $\mathbf{s}_b$ is the true Sun direction in the CubeSat body frame. Measurement imperfections are represented by
 \begin{equation}
-    y_i = g_i I_i + b_i + \\eta_i,
+    y_i = g_i I_i+b_i+\eta_i,
 \end{equation}
-where $g_i$ is the sensor gain, $b_i$ is an offset, and $\\eta_i$ is additive Gaussian measurement noise. Negative readings are clipped to zero.
+where $g_i$ is a gain factor, $b_i$ is an offset, and $\eta_i$ is Gaussian measurement noise. Negative readings are clipped to zero.
 
-For the six orthogonal sensor normals, the body-frame Sun direction is reconstructed using
+The six sensors are mounted on the $+X,-X,+Y,-Y,+Z,-Z$ faces. In the nominal estimator the signed components are obtained from opposing-face differences, which is equivalent to
 \begin{equation}
-    \mathbf{s}_{\mathrm{raw}}
-    =
-    \mathbf{N}^{\mathsf{T}}\mathbf{y},
+    \mathbf{s}_{\mathrm{raw}}=\mathbf{N}^{\mathsf T}\mathbf{y},
+    \qquad
+    \hat{\mathbf{s}}_b=
+    \frac{\mathbf{s}_{\mathrm{raw}}}{\|\mathbf{s}_{\mathrm{raw}}\|}.
 \end{equation}
-where $\mathbf{N}$ contains the six sensor normals as rows and $\mathbf{y}$ contains the six sensor readings. The estimated Sun direction is then
-\begin{equation}
-    \hat{\mathbf{s}}_b
-    =
-    \frac{\mathbf{s}_{\mathrm{raw}}}
-    {\|\mathbf{s}_{\mathrm{raw}}\|}.
-\end{equation}
-
-For the $\pm X$, $\pm Y$, and $\pm Z$ arrangement, this is equivalent to forming the signed difference between opposing face measurements along each body axis.
 
 \subsection{Magnetometer Model}
 
-The three-axis magnetometer measurement is modelled as
+The magnetometer measurement is modelled as
 \begin{equation}
     \mathbf{m}_{\mathrm{meas}}
     =
-    \mathbf{G}\mathbf{m}_b
-    +
-    \mathbf{b}
-    +
-    \mathbf{n}
-    +
+    \mathbf{G}\mathbf{m}_b+
+    \mathbf{b}+
+    \boldsymbol{\eta}_m+
     \mathbf{d},
 \end{equation}
-where $\mathbf{m}_b$ is the true body-frame magnetic-field direction, $\mathbf{G}$ contains scale-factor errors, $\mathbf{b}$ represents bias, $\mathbf{n}$ is random sensor noise, and $\mathbf{d}$ is an optional magnetic disturbance used in the fault studies.
-
-The estimated magnetic direction is obtained by normalizing the measured vector:
+where $\mathbf{G}$ is a diagonal scale-factor matrix, $\mathbf{b}$ is the bias, $\boldsymbol{\eta}_m$ is random sensor noise, and $\mathbf{d}$ is an optional spacecraft-generated disturbance. The measured magnetic direction is
 \begin{equation}
-    \hat{\mathbf{m}}_b
-    =
+    \hat{\mathbf{m}}_b=
     \frac{\mathbf{m}_{\mathrm{meas}}}
     {\|\mathbf{m}_{\mathrm{meas}}\|}.
 \end{equation}
 
-The intrinsic magnetometer noise and the spacecraft-generated disturbance are treated separately. This distinction is important because spacecraft-generated magnetic interference can be much larger than the intrinsic noise of the sensor.
+The intrinsic RM3100-class noise is treated separately from the larger disturbance used for fault studies.
 
-\subsection{TRIAD Attitude Estimation}
+\subsection{Baseline TRIAD Attitude Estimation}
 
-Two non-parallel vectors are used to construct orthonormal triads in the reference and body frames. In the reference frame,
+Two non-parallel vector observations are used to construct orthonormal triads. In the reference frame,
 \begin{align}
-    \mathbf{t}_{1r} &= \mathbf{s}_r, \\
-    \mathbf{t}_{2r} &=
-    \frac{\mathbf{s}_r \times \mathbf{m}_r}
-    {\|\mathbf{s}_r \times \mathbf{m}_r\|}, \\
-    \mathbf{t}_{3r} &= \mathbf{t}_{1r}\times\mathbf{t}_{2r}.
+    \mathbf{t}_{1r}&=\mathbf{s}_r,\\
+    \mathbf{t}_{2r}&=
+    \frac{\mathbf{s}_r\times\mathbf{m}_r}
+    {\|\mathbf{s}_r\times\mathbf{m}_r\|},\\
+    \mathbf{t}_{3r}&=\mathbf{t}_{1r}\times\mathbf{t}_{2r},
 \end{align}
-
-Similarly, using the measured body-frame vectors,
-\begin{align}
-    \mathbf{t}_{1b} &= \hat{\mathbf{s}}_b, \\
-    \mathbf{t}_{2b} &=
-    \frac{\hat{\mathbf{s}}_b \times \hat{\mathbf{m}}_b}
-    {\|\hat{\mathbf{s}}_b \times \hat{\mathbf{m}}_b\|}, \\
-    \mathbf{t}_{3b} &= \mathbf{t}_{1b}\times\mathbf{t}_{2b}.
-\end{align}
-
-The two triad matrices are
+and the same construction is applied to $\hat{\mathbf{s}}_b$ and $\hat{\mathbf{m}}_b$ in the body frame. The body-from-reference attitude estimate is
 \begin{equation}
-    \mathbf{T}_r =
-    \begin{bmatrix}
-        \mathbf{t}_{1r} & \mathbf{t}_{2r} & \mathbf{t}_{3r}
-    \end{bmatrix},
-    \qquad
-    \mathbf{T}_b =
-    \begin{bmatrix}
-        \mathbf{t}_{1b} & \mathbf{t}_{2b} & \mathbf{t}_{3b}
-    \end{bmatrix},
-\end{equation}
-and the estimated body-from-reference rotation matrix is
-\begin{equation}
-    \hat{\mathbf{R}}
-    =
-    \mathbf{T}_b\mathbf{T}_r^\mathsf{T}.
+    \hat{\mathbf{R}}=\mathbf{T}_b\mathbf{T}_r^\mathsf{T}.
 \end{equation}
 
-In simulation, the true rotation matrix $\mathbf{R}$ is known, so the principal attitude error can be calculated from
+For simulation validation, the principal attitude error is
 \begin{equation}
-    \mathbf{R}_{e}
-    =
-    \hat{\mathbf{R}}\mathbf{R}^{\mathsf{T}},
-\end{equation}
-followed by
-\begin{equation}
-    \theta_e
-    =
-    \cos^{-1}
-    \left(
-        \frac{\mathrm{tr}(\mathbf{R}_e)-1}{2}
+    \theta_e=
+    \cos^{-1}\left(
+    \frac{\mathrm{tr}(\hat{\mathbf{R}}\mathbf{R}^{\mathsf T})-1}{2}
     \right).
 \end{equation}
+The true rotation $\mathbf{R}$ is never used by the onboard fault logic.
 
-This true error is used only for simulation validation and is not an input to the onboard reliability estimator.
+\subsection{Automatic Sun-Sensor Fault Detection}
 
-\subsection{Fault and Degradation Scenarios}
+A hard failed Sun sensor is simulated as a channel that becomes stuck at zero. The failure is most harmful when that face should be illuminated; when the failed face is physically dark, a zero output is indistinguishable from the correct healthy measurement in one instantaneous sample.
 
-The simulation investigates both nominal sensor imperfections and more severe faults. The main fault scenarios are:
-\begin{itemize}
-    \item complete loss of one Sun-sensor reading;
-    \item external magnetic disturbance;
-    \item simultaneous Sun-sensor failure and magnetic disturbance.
-\end{itemize}
+The detector first removes the assumed gain and offset:
+\begin{equation}
+    \tilde y_i=
+    \max\left(0,\frac{y_i-b_i}{g_i}\right).
+\end{equation}
+For each opposing pair, the directly observed signed components are formed from the corrected readings. If both sensors of one axis appear dark, but the other two axes imply a substantial missing component, the unit-vector constraint gives
+\begin{equation}
+    |s_k|=
+    \sqrt{
+        \max\left(
+            0,\,
+            1-\sum_{j\neq k}s_j^2
+        \right)
+    }.
+\end{equation}
 
-The six Sun sensors are placed symmetrically on the CubeSat faces, so averaged single-sensor failure effects are expected to be similar when the spacecraft attitudes are sampled uniformly. The all-six failure comparison is therefore primarily used as a consistency check rather than to identify one uniquely critical face. The magnetic-disturbance direction is fixed in the sweep, so the reported disturbance results characterize magnitude sensitivity for one representative disturbance orientation rather than every possible spacecraft magnetic-field geometry.
+The two possible signs of the missing component correspond to the two faces of the dark opposing pair. Each candidate Sun vector is compared with the measured magnetic direction. The candidate whose Sun--magnetic separation is closest to the known reference separation is selected if three conditions are satisfied:
+\begin{enumerate}
+    \item both measured channels of the axis are effectively dark;
+    \item the implied missing component is at least 0.30 and the failed-channel residual is at least 0.15; and
+    \item the Sun--magnetic consistency error is below $6^\circ$.
+\end{enumerate}
+
+This geometric test makes the fault detector independent of the true simulated attitude.
+
+\subsection{Self-Reconfigured Sun-Vector Estimation}
+
+Once a failed face is identified, that channel is excluded from the Sun-vector reconstruction. For axes with two healthy opposing sensors, the calibrated signed difference is used normally. If one channel of an opposing pair is failed and the healthy opposite face is illuminated, the remaining measurement directly determines the signed component. If the healthy opposite face is dark, the failed face is inferred to be the sunward face and the missing magnitude is reconstructed from the unit-vector constraint.
+
+This reconfigured estimator therefore uses the physical redundancy of the six-face geometry rather than adding another Sun sensor. The design presently supports one hard failed Sun-sensor channel.
+
+\subsection{Persistent Fault Memory}
+
+A static detector alone can lose awareness of a failed sensor when that face later rotates into darkness. The final system therefore includes a short-term confirmation memory. A current detector hit can trigger immediate reconfiguration for that sample, but a persistent hard fault is stored only when the same face is detected at least three times within a rolling window of 20 samples. Older isolated detections expire from the window.
+
+Once confirmed, the failed channel remains excluded until a system reset or higher-level recovery action. This prevents a known failed sensor from being reused simply because its present illumination makes the failure temporarily unobservable.
+
+\subsection{Magnetometer Health Gate and Graceful Degradation}
+
+The magnetometer is evaluated using two independent measurement-quality checks. The normalized magnitude error is
+\begin{equation}
+    e_m=
+    \left|\|\mathbf{m}_{\mathrm{meas}}\|-1\right|,
+\end{equation}
+while the Sun--magnetic consistency error is
+\begin{equation}
+    e_c=
+    \left|
+    \cos^{-1}(\hat{\mathbf{s}}_b^\mathsf{T}\hat{\mathbf{m}}_b)
+    -
+    \cos^{-1}(\mathbf{s}_r^\mathsf{T}\mathbf{m}_r)
+    \right|.
+\end{equation}
+
+Full TRIAD attitude is accepted only when
+\begin{equation}
+    e_m\leq0.0155,
+    \qquad
+    e_c\leq5.75^\circ.
+\end{equation}
+
+If either condition fails, the system does not report a full three-dimensional attitude. Instead it enters \texttt{SUN\_SAFE}, retaining the Sun direction for survival functions such as coarse Sun pointing and power management. This is a deliberate graceful-degradation action rather than an estimator failure.
+
+\subsection{Autonomous Operating Modes}
+
+The final state logic has four modes:
+\begin{table}[H]
+\centering
+\caption{Autonomous operating modes of the proposed system.}
+\label{tab:modes}
+\small
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{|p{2.6cm}|X|X|}
+\hline
+\textbf{Mode} & \textbf{Condition} & \textbf{Output/action} \\
+\hline
+\texttt{NORMAL} & No active Sun fault and magnetometer accepted. & Full TRIAD attitude and fuzzy confidence. \\
+\hline
+\texttt{RECONFIGURED} & One Sun sensor is detected or remembered as failed; magnetometer accepted. & Full TRIAD attitude using the fault-tolerant Sun reconstruction. \\
+\hline
+\texttt{SUN\_SAFE} & A usable Sun direction exists but the magnetometer fails the health gate. & Sun direction and confidence are retained; full attitude is withheld. \\
+\hline
+\texttt{SAFE} & A trustworthy Sun direction cannot be reconstructed. & Full attitude is withheld and a higher-level safe response is required. \\
+\hline
+\end{tabularx}
+\end{table}
 
 \subsection{Fuzzy Reliability Assessment}
 
-The reliability system uses three measurement-derived quality indicators together with one Sun-sensor channel-health indicator.
+The hard-fault logic decides whether measurements are accepted or rejected. Fuzzy logic has a separate role: it communicates the confidence of the current sensor solution.
 
-\subsubsection{Sun-Sensor Health Fraction}
+Four crisp indicators are used:
+\begin{enumerate}
+    \item Sun-sensor health fraction $H_s=N_h/6$;
+    \item Sun--magnetic consistency error $e_c$;
+    \item magnetometer norm error $e_m$; and
+    \item Sun-sensor reconstruction residual
+    \begin{equation}
+        e_s=
+        \sqrt{\frac{1}{N_h}
+        \sum_{i\in\mathcal{H}}
+        \left(y_i-\hat y_i\right)^2},
+    \end{equation}
+    evaluated only over currently usable Sun-sensor channels.
+\end{enumerate}
 
-If $N_h$ Sun-sensor channels are reported healthy by a basic channel-status or self-test diagnostic, the health fraction is
+The inputs are fuzzified using triangular and trapezoidal membership functions. Conjunction uses MIN and competing rules are aggregated with MAX, following the MA4822 fuzzy-logic method. Five output classes are used: Very Low, Low, Medium, High, and Very High, represented by the crisp values $\{10,30,50,70,90\}$. Weighted-sum defuzzification gives
 \begin{equation}
-    H_s = \frac{N_h}{6}.
-\end{equation}
-This quantity is fuzzified into \emph{poor}, \emph{degraded}, and \emph{good} states. In the present simulation, a deliberately injected hard failure is assumed to be detected by this status monitor, so the failed channel is counted as unhealthy. This is an explicit modelling assumption; a flight implementation would require a real plausibility check or built-in-test mechanism.
-
-\subsubsection{Sun--Magnetic Vector Consistency}
-
-The angular separation between the two reference vectors is
-\begin{equation}
-    \alpha_r =
-    \cos^{-1}\left(
-        \mathbf{s}_r^\mathsf{T}\mathbf{m}_r
-    \right),
-\end{equation}
-while the measured separation is
-\begin{equation}
-    \alpha_m =
-    \cos^{-1}\left(
-        \hat{\mathbf{s}}_b^\mathsf{T}\hat{\mathbf{m}}_b
-    \right).
+    R_{\mathrm{rel}}=
+    \frac{\sum_k V_kP_k}{\sum_kP_k}.
 \end{equation}
 
-The consistency error is
-\begin{equation}
-    e_c = |\alpha_m-\alpha_r|.
-\end{equation}
-A small value indicates that the relative geometry between the two sensed vectors remains physically consistent.
+The confidence score does not override the hard safety logic. A measurement can therefore be rejected by the magnetic-health gate even if the fuzzy score is not numerically zero.
 
-\subsubsection{Magnetometer Norm Error}
+\subsection{Sensor and Decision Parameters}
 
-The magnetic-field quantities are expressed in normalized units in the simulation. An abnormal measured magnitude can therefore indicate magnetic disturbance. The indicator is
-\begin{equation}
-    e_m =
-    \left|
-        \|\mathbf{m}_{\mathrm{meas}}\|-1
-    \right|.
-\end{equation}
-In a hardware implementation, the measured field magnitude would first be normalized by the expected local geomagnetic-field magnitude from the onboard field model.
-
-\subsubsection{Sun-Sensor Reconstruction Residual}
-
-The estimated Sun direction is used to reconstruct the expected sensor readings:
-\begin{equation}
-    \hat{I}_i =
-    g_i\max\left(0,\mathbf{n}_i^\mathsf{T}\hat{\mathbf{s}}_b\right)+b_i.
-\end{equation}
-
-The root-mean-square reconstruction residual is
-\begin{equation}
-    e_s =
-    \sqrt{
-        \frac{1}{N}
-        \sum_{i=1}^{N}
-        \left(
-            y_i-\hat{I}_i
-        \right)^2
-    }.
-\end{equation}
-This indicator helps detect inconsistencies such as a failed Sun sensor that may not be obvious from the reconstructed Sun direction alone.
-
-\subsubsection{Fuzzy Inference and Defuzzification}
-
-Triangular and trapezoidal membership functions are used to convert the four crisp indicators into fuzzy beliefs. The rule base follows the MA4822 fuzzy-logic approach: conjunction is evaluated with the MIN operator, while multiple rules supporting the same output class are combined with the MAX operator.
-
-Five output reliability classes are used:
-\begin{equation}
-    \{\text{Very Low, Low, Medium, High, Very High}\},
-\end{equation}
-with representative crisp values
-\begin{equation}
-    \{10,30,50,70,90\}.
-\end{equation}
-
-If the aggregated rule strengths are denoted by $P_k$ and their representative reliability values by $V_k$, the final reliability score is obtained using weighted-sum defuzzification:
-\begin{equation}
-    R_{\mathrm{rel}}
-    =
-    \frac{
-        \sum_k V_k P_k
-    }{
-        \sum_k P_k
-    }.
-\end{equation}
-
-Five output levels are used instead of only Low/Medium/High in order to reduce the strong quantization that appears when only three representative output values are used. Some residual banding remains because the output still uses discrete representative values. Continuous output membership functions with centroid defuzzification are therefore retained as a possible future improvement.
-
-\subsection{Sensor Model and Parameter Selection}
-
-The Sun-sensor model uses a baseline normalized random noise standard deviation of 0.02. NASA's reported \SI{5}{\degree} (3$\sigma$) coarse Sun-sensor accuracy is an angular-accuracy specification, not a direct amplitude-noise specification. As an order-of-magnitude engineering approximation, it can be related to the local slope of a cosine response near \SI{45}{\degree} incidence:
-\begin{equation}
-    \sigma_I
-    \approx
-    \sin(45^\circ)
-    \left(
-        \frac{5^\circ}{3}
-        \frac{\pi}{180^\circ}
-    \right)
-    \approx 0.0206.
-\end{equation}
-The resulting value is used only as a plausible baseline noise scale for the sensitivity study; it is not claimed to be a manufacturer-specified photodiode noise standard deviation.
-
-The magnetometer parameters are based on a PNI RM3100-class device. Published nanosatellite work reports a worst-axis noise level of \SI{17}{\nano\tesla}, bias of \SI{440}{\nano\tesla}, and scale-factor error of 4885 ppm \cite{colagrossi2023hermes}. NOAA reports an Earth-surface magnetic-field intensity of approximately \SIrange{25}{65}{\micro\tesla} \cite{noaaGeomagFAQ}. A representative value of \SI{50}{\micro\tesla} is used only to normalize the sensor-error magnitudes in this simulation; an operational spacecraft would instead use the local field magnitude from a geomagnetic model at its orbital position.
-
-Table~\ref{tab:sensor-parameters} summarizes the parameters and explicitly distinguishes sourced quantities from deliberate sensitivity-study assumptions.
+The physical sensor assumptions remain based on the coarse Sun-sensor and RM3100-class values described in the literature. The final autonomy thresholds are summarized separately because they are design choices determined for the present simulation study.
 
 \begin{table}[H]
 \centering
-\caption{Sensor and environment parameters used in the simulation.}
+\caption{Key physical and autonomy parameters used in the frozen simulation.}
 \label{tab:sensor-parameters}
 \scriptsize
 \renewcommand{\arraystretch}{1.18}
 \setlength{\tabcolsep}{4pt}
-\begin{tabularx}{\textwidth}{|p{2.25cm}|p{2.75cm}|p{3.25cm}|X|}
+\begin{tabularx}{\textwidth}{|p{3.2cm}|p{3.0cm}|X|}
 \hline
-\textbf{Subsystem} & \textbf{Parameter} & \textbf{Value} & \textbf{Basis} \\
+\textbf{Parameter} & \textbf{Value} & \textbf{Basis} \\
 \hline
-Sun sensor & Architecture & 6 cosine sensors, $\pm X,\pm Y,\pm Z$ & Proposed coarse six-face CubeSat arrangement. \\
+Sun-sensor architecture & 6 cosine sensors, $\pm X,\pm Y,\pm Z$ & Proposed six-face coarse CubeSat arrangement. \\
 \hline
-Sun sensor & Angular accuracy & \SI{5}{\degree} (3$\sigma$) & Literature value for Space Micro CSS-01/CSS-02 \cite{nasa2024soa}. \\
+Coarse Sun-sensor angular accuracy & \SI{5}{\degree} (3$\sigma$) & Space Micro CSS-01/CSS-02 literature value \cite{nasa2024soa}. \\
 \hline
-Sun sensor & Normalized random-noise std. & 0.02 & Engineering approximation from the \SI{5}{\degree} (3$\sigma$) angular accuracy using a cosine-response linearization near \SI{45}{\degree}; not a direct datasheet noise specification. \\
+Normalized Sun random-noise std. & 0.02 & Engineering mapping from the coarse angular-accuracy scale; used as a sensitivity-study baseline rather than a direct datasheet noise specification. \\
 \hline
-Sun sensor & Per-face gain factors & \shortstack[l]{$[1.03,\ 0.98,\ 0.96,$\\$1.02,\ 1.05,\ 0.97]$} & Assumed fixed inter-channel gain variation used to test sensitivity of the simple Sun-vector reconstruction. \\
+RM3100 noise / bias / scale error & \SI{17}{\nano\tesla} / \SI{440}{\nano\tesla} / 4885 ppm & HERMES nanosatellite values \cite{colagrossi2023hermes}. \\
 \hline
-Sun sensor & Per-face offsets & \shortstack[l]{$[0.010,\ 0.005,\ 0,$\\$0.008,\ 0.012,\ 0.004]$} & Assumed fixed inter-channel offset variation used to test sensitivity of the simple Sun-vector reconstruction. \\
+Reference magnetic-field magnitude & \SI{50}{\micro\tesla} & Representative normalization within the approximate terrestrial range \cite{noaaGeomagFAQ}. \\
 \hline
-Magnetometer & Device basis & PNI RM3100 class & Representative nanosatellite magnetometer \cite{colagrossi2023hermes}. \\
+Magnetic fault magnitude & \SI{7.5}{\micro\tesla} & Conservative static sensitivity case informed by published CubeSat magnetic interference \cite{miles2016fluxgate,hoffmann2022spacecraftnoise}. \\
 \hline
-Magnetometer & Noise level & \SI{17}{\nano\tesla} & RM3100 worst-axis literature value \cite{colagrossi2023hermes}. \\
+Sun-fault missing-component threshold & 0.30 & Detector design choice. \\
 \hline
-Magnetometer & Bias & \SI{440}{\nano\tesla} & RM3100 worst-axis literature value \cite{colagrossi2023hermes}. \\
+Sun-fault consistency threshold & \SI{6}{\degree} & Detector design choice. \\
 \hline
-Magnetometer & Scale-factor error & 4885 ppm & RM3100 worst-axis literature value \cite{colagrossi2023hermes}. \\
+Persistent-fault confirmation & 3 detections within 20 samples & Rolling-window design choice to reject isolated false alarms. \\
 \hline
-Environment & Reference magnetic-field magnitude & \SI{50}{\micro\tesla} & Representative normalization value within NOAA's approximate \SIrange{25}{65}{\micro\tesla} surface range \cite{noaaGeomagFAQ}; the actual orbital field varies with position. \\
+Magnetometer norm limit & 0.0155 & Final magnetic-health gate. \\
 \hline
-Magnetometer & Normalized noise std. & $3.4\times10^{-4}$ & Derived as $17/50000$. \\
+Magnetometer consistency limit & \SI{5.75}{\degree} & Final magnetic-health gate. \\
 \hline
-Magnetometer & Normalized worst-axis bias & $8.8\times10^{-3}$ & Derived as $440/50000$. \\
-\hline
-Fault study & Magnetic-disturbance sweep & \SIrange{0}{7.5}{\micro\tesla} & Conservative static sensitivity sweep informed by reported Ex-Alta 1 magnetorquer interference exceeding \SI{7.5}{\micro\tesla} peak-to-peak \cite{miles2016fluxgate,hoffmann2022spacecraftnoise}; it does not reproduce that waveform directly. \\
-\hline
-Monte Carlo & Samples per case & 1000 & Simulation-design choice. \\
+Monte Carlo samples per static case & 1000 & Simulation-design choice. \\
 \hline
 \end{tabularx}
 \end{table}
