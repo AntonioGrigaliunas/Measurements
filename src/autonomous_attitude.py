@@ -35,8 +35,8 @@ from sun_sensor import unit_vector
 from sun_sensor_fault_detection import detect_failed_sun_sensor
 
 
-MAG_NORM_ERROR_LIMIT = 0.03
-MAG_CONSISTENCY_ERROR_LIMIT_DEG = 6.0
+MAG_NORM_ERROR_LIMIT = 0.0155
+MAG_CONSISTENCY_ERROR_LIMIT_DEG = 5.75
 
 
 def assess_magnetometer_health(
