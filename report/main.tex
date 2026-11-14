@@ -87,7 +87,7 @@ The present project retains this interpretable fuzzy confidence layer, but uses 
 
 Fault-tolerant attitude determination extends sensor fusion by deciding how the estimator should respond when its inputs are no longer trustworthy. Colagrossi and Lavagna proposed a fault-tolerant attitude and orbit determination architecture for small satellites with embedded failure detection and isolation, autonomous management of redundant measurements, reconfiguration of the estimation functions, and transitions to compatible safe modes when the nominal solution cannot be maintained \cite{colagrossi2022faulttolerant}. Their architecture explicitly includes sensor exclusion after confirmed failures and a transition from full attitude determination to Sun-direction estimation when the available measurements are insufficient for a trustworthy full solution.
 
-This failure-detection--isolation--recovery philosophy motivates the architecture developed in this project, but the implementation is deliberately simpler and focused on the sensing concepts taught in MA4822. Instead of relying on redundant high-performance attitude sensors or a dynamic Kalman-filter architecture, the proposed method exploits the geometry of six coarse Sun sensors, the unit-length constraint of the Sun vector, consistency with the magnetic reference vector, short-term fault memory, and a dedicated magnetic-health gate. The contribution of the project is therefore a lightweight sensor-level demonstration of self-reconfiguration and graceful degradation using low-cost CubeSat sensing hardware, with fuzzy logic retained as an interpretable confidence output rather than as the sole fault detector.
+This failure-detection--isolation--recovery philosophy motivates the architecture developed in this project, but the implementation is deliberately simpler and focused on the sensing concepts taught in MA4822. Instead of relying on redundant high-performance attitude sensors or a dynamic Kalman-filter architecture, the proposed method exploits the geometry of six coarse Sun sensors, the unit-length constraint of the Sun vector, consistency with the magnetic reference vector, short-term fault memory, and a dedicated magnetic-health gate. The contribution of the project is therefore a lightweight sensor-level demonstration of self-reconfiguration and graceful degradation using a low-cost CubeSat sensing architecture, with fuzzy logic retained as an interpretable confidence output rather than as the sole fault detector.
 
 \section{Description of Proposed Solution}
 
@@ -400,7 +400,7 @@ The final temporal validation preserves the nominal accuracy of the original sen
 Before analysing explicit faults, the baseline TRIAD estimator was evaluated over a grid of Sun-sensor and magnetometer random-noise levels. This separates ordinary measurement uncertainty from the larger hard-fault cases considered later.
 
 \IfFileExists{figures/final_noise_sensitivity.png}{
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
     \includegraphics[width=0.95\textwidth]{figures/final_noise_sensitivity.png}
     \caption{Sensitivity of the baseline full-attitude estimate to Sun-sensor and magnetometer random noise. The left panel varies Sun-sensor noise for the tested magnetometer-noise levels, while the right panel shows the corresponding dependence on magnetometer noise.}
@@ -417,7 +417,7 @@ Over the much smaller intrinsic magnetometer-noise range tested here, changing t
 A complete zero-output failure was injected independently into each of the six Sun-sensor faces. Figure~\ref{fig:reconfiguration} compares the standard estimator, the automatic detector/reconfiguration method, and a known-fault benchmark in which the failed face is supplied directly to the estimator.
 
 \IfFileExists{figures/final_sun_reconfiguration.png}{
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
     \includegraphics[width=0.86\textwidth]{figures/final_sun_reconfiguration.png}
     \caption{Mean attitude error for each failed Sun-sensor face using the standard estimator, automatic reconfiguration, and a known-fault benchmark.}
@@ -436,7 +436,7 @@ The temporal validation tests whether a detected Sun-sensor failure remains excl
 Without persistent memory, 3.56\% of post-fault samples produce a full-attitude output whose true error exceeds $10^\circ$. With the persistent-memory manager this falls to 1.44\%, as shown in Fig.~\ref{fig:memory-benefit}.
 
 \IfFileExists{figures/final_persistent_memory_benefit.png}{
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
     \includegraphics[width=0.65\textwidth]{figures/final_persistent_memory_benefit.png}
     \caption{Reduction in unsafe full-attitude outputs after adding persistent Sun-sensor fault memory.}
@@ -471,7 +471,7 @@ Combined fault & 5.0\% & 2.6\% & 92.4\% & 7.6\% & 9.534 & 10.854 & 0.67 \\
 \end{table}
 
 \IfFileExists{figures/final_post_fault_modes.png}{
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
     \includegraphics[width=0.82\textwidth]{figures/final_post_fault_modes.png}
     \caption{Autonomous operating-mode selection during the post-fault portion of each trajectory.}
@@ -488,7 +488,7 @@ For the \SI{7.5}{\micro\tesla} magnetic disturbance, the system enters \texttt{S
 The fuzzy score remains a confidence indicator rather than the hard safety decision. Figure~\ref{fig:fuzzy-final} shows the mean post-fault score for the four final scenarios.
 
 \IfFileExists{figures/final_fuzzy_confidence.png}{
-\begin{figure}[H]
+\begin{figure}[htbp]
     \centering
     \includegraphics[width=0.72\textwidth]{figures/final_fuzzy_confidence.png}
     \caption{Mean fuzzy confidence during the post-fault portion of the final continuous simulations.}
