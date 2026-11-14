@@ -342,20 +342,26 @@ Monte Carlo samples per static case & 1000 & Simulation-design choice. \\
 
 \section{Implementation}
 
-The proposed system is implemented in Python using NumPy for numerical operations and Matplotlib for result visualization. The implementation is separated into sensor models, attitude estimation, fuzzy reliability, Monte Carlo analysis, and fault-analysis scripts.
+The complete system is implemented in Python using NumPy for numerical operations and Matplotlib for validation figures. The code is separated into sensor simulation, attitude estimation, fault detection, autonomy logic, fuzzy confidence, and validation scripts.
 
-The main software components are:
+The principal software components are:
 \begin{itemize}
     \item \texttt{sun\_sensor.py}: six-face cosine Sun-sensor model;
     \item \texttt{magnetometer.py}: three-axis magnetometer model;
-    \item \texttt{attitude\_estimation.py}: Sun-vector reconstruction, TRIAD, and attitude-error calculations;
-    \item \texttt{fuzzy\_reliability.py}: membership functions, fuzzy rules, and weighted-sum defuzzification;
-    \item \texttt{monte\_carlo.py}: random-attitude noise sensitivity study;
-    \item \texttt{fault\_analysis.py}: nominal and faulted scenarios;
-    \item \texttt{magnetometer\_sweep.py}: magnetic-disturbance sensitivity study.
+    \item \texttt{attitude\_estimation.py}: nominal and reconfigured Sun-vector estimation, TRIAD, and attitude-error calculations;
+    \item \texttt{sun\_sensor\_fault\_detection.py}: automatic geometric Sun-sensor fault isolation;
+    \item \texttt{autonomous\_attitude.py}: magnetic-health gate, operating-mode manager, persistent fault memory, and integrated fuzzy confidence output;
+    \item \texttt{fuzzy\_reliability.py}: membership functions, fuzzy rule base, and weighted-sum defuzzification;
+    \item \texttt{automatic\_reconfiguration\_analysis.py}: static single-fault detection and recovery benchmark;
+    \item \texttt{final\_system\_analysis.py}: continuous trajectory validation with persistent faults; and
+    \item \texttt{report\_figures.py}: frozen final report figure generation.
 \end{itemize}
 
-For each Monte Carlo sample, a uniformly distributed random three-dimensional rotation is generated using a normalized random quaternion. The known reference Sun and magnetic vectors are rotated into the body frame, passed through the sensor models, reconstructed, fused using TRIAD, and compared with the known simulated attitude. The same random seed is used when comparing fault scenarios so that differences are caused by the injected fault rather than by a different random attitude sequence.
+Two complementary validation methods are used. First, uniformly distributed random spacecraft attitudes are generated from normalized random quaternions for the static Monte Carlo studies. This isolates sensor geometry and provides fair comparisons across all six possible failed Sun-sensor faces.
+
+Second, the final autonomous system is tested on a smoothly changing attitude trajectory. Faults are injected from sample 300 of a 1200-sample sequence. This temporal test is required because persistent fault memory cannot be evaluated from independent random snapshots. The same fault then remains active while illumination geometry changes, allowing the simulation to verify detection, memory latching, reconfiguration, safe-mode selection, and fuzzy confidence over time.
+
+The estimator parameters and decision thresholds are frozen before generating the final figures. The final report therefore presents validation of one fixed architecture rather than further tuning against the reported outcomes.
 
 \section{Results}
 
