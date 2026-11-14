@@ -5,19 +5,17 @@ Operating modes
 NORMAL
     Sun array and magnetometer are accepted; full TRIAD attitude is available.
 RECONFIGURED
-    One impactful Sun-sensor failure is detected and the Sun vector is
+    One Sun-sensor failure is detected or remembered and the Sun vector is
     reconstructed using the remaining channels; full TRIAD attitude remains
     available.
 SUN_SAFE
     A usable Sun direction is available, but the magnetometer fails the
-    magnetic-health checks. Full 3D attitude is intentionally withheld rather
-    than reporting a potentially corrupted TRIAD solution.
+    magnetic-health checks. Full 3D attitude is intentionally withheld.
 SAFE
     A trustworthy Sun direction cannot be produced.
 
-The hard-fault logic and the fuzzy reliability layer have different jobs:
-hard-fault logic protects/reconfigures the estimator, while fuzzy logic can
-remain an interpretable confidence output.
+The hard-fault logic protects and reconfigures the estimator. The fuzzy layer
+has a separate job: it reports an interpretable confidence score.
 """
 
 from __future__ import annotations
@@ -30,6 +28,7 @@ from attitude_estimation import (
     estimate_sun_vector_reconfigured,
     triad_attitude,
 )
+from fuzzy_reliability import fuzzy_reliability_score, reliability_label
 from sensor_parameters import SUN_GAINS, SUN_OFFSETS
 from sun_sensor import unit_vector
 from sun_sensor_fault_detection import detect_failed_sun_sensor
@@ -76,6 +75,88 @@ def assess_magnetometer_health(
     }
 
 
+def sun_reconstruction_residual(
+    sensor_normals: np.ndarray,
+    readings: np.ndarray,
+    estimated_sun_body: np.ndarray,
+    gains: np.ndarray,
+    offsets: np.ndarray,
+    healthy_mask: np.ndarray | None = None,
+) -> float:
+    """Return calibrated RMS Sun-sensor residual over usable channels."""
+    ideal_prediction = np.maximum(
+        0.0,
+        np.asarray(sensor_normals, dtype=float) @ estimated_sun_body,
+    )
+    predicted = np.maximum(
+        0.0,
+        np.asarray(gains, dtype=float) * ideal_prediction
+        + np.asarray(offsets, dtype=float),
+    )
+
+    residuals = np.asarray(readings, dtype=float) - predicted
+
+    if healthy_mask is not None:
+        healthy_mask = np.asarray(healthy_mask, dtype=bool)
+        residuals = residuals[healthy_mask]
+
+    if residuals.size == 0:
+        return float("inf")
+
+    return float(np.sqrt(np.mean(residuals**2)))
+
+
+def _reliability_output(
+    sensor_normals: np.ndarray,
+    sun_readings: np.ndarray,
+    magnetic_measurement: np.ndarray,
+    estimated_sun_body: np.ndarray,
+    sun_reference: np.ndarray,
+    magnetic_reference: np.ndarray,
+    gains: np.ndarray,
+    offsets: np.ndarray,
+    failed_sensor: int | None,
+) -> dict[str, object]:
+    """Calculate the fuzzy confidence score for the current sensor solution."""
+    healthy_mask = np.ones(len(sun_readings), dtype=bool)
+    if failed_sensor is not None:
+        healthy_mask[int(failed_sensor)] = False
+
+    magnetic_health = assess_magnetometer_health(
+        estimated_sun_body,
+        magnetic_measurement,
+        sun_reference,
+        magnetic_reference,
+    )
+
+    residual = sun_reconstruction_residual(
+        sensor_normals,
+        sun_readings,
+        estimated_sun_body,
+        gains,
+        offsets,
+        healthy_mask=healthy_mask,
+    )
+
+    sun_health_fraction = float(np.mean(healthy_mask))
+
+    score, possibilities = fuzzy_reliability_score(
+        sun_health_fraction,
+        float(magnetic_health["consistency_error_deg"]),
+        float(magnetic_health["norm_error"]),
+        residual,
+    )
+
+    return {
+        "score": float(score),
+        "label": reliability_label(score),
+        "possibilities": possibilities,
+        "sun_health_fraction": sun_health_fraction,
+        "sun_residual": residual,
+        "magnetometer_health": magnetic_health,
+    }
+
+
 def autonomous_attitude_solution(
     sensor_normals: np.ndarray,
     sun_readings: np.ndarray,
@@ -84,8 +165,13 @@ def autonomous_attitude_solution(
     magnetic_reference: np.ndarray,
     gains: np.ndarray = SUN_GAINS,
     offsets: np.ndarray = SUN_OFFSETS,
+    remembered_failed_sun_sensor: int | None = None,
 ) -> dict[str, object]:
-    """Return the autonomous attitude solution and current operating mode."""
+    """Return one autonomous attitude solution.
+
+    remembered_failed_sun_sensor lets a stateful manager force continued
+    reconfiguration after a previously confirmed hard failure.
+    """
     detection = detect_failed_sun_sensor(
         sun_readings,
         magnetic_measurement,
@@ -94,10 +180,20 @@ def autonomous_attitude_solution(
         gains,
         offsets,
     )
-    failed_sensor = detection["failed_sensor"]
+    detected_sensor = detection["failed_sensor"]
+
+    if remembered_failed_sun_sensor is not None:
+        active_failed_sensor = int(remembered_failed_sun_sensor)
+        failure_source = "memory"
+    elif detected_sensor is not None:
+        active_failed_sensor = int(detected_sensor)
+        failure_source = "current_detection"
+    else:
+        active_failed_sensor = None
+        failure_source = "none"
 
     try:
-        if failed_sensor is None:
+        if active_failed_sensor is None:
             estimated_sun_body = estimate_sun_vector(
                 sensor_normals,
                 sun_readings,
@@ -105,7 +201,7 @@ def autonomous_attitude_solution(
             sun_reconfigured = False
         else:
             healthy_mask = np.ones(len(sun_readings), dtype=bool)
-            healthy_mask[int(failed_sensor)] = False
+            healthy_mask[active_failed_sensor] = False
             estimated_sun_body = estimate_sun_vector_reconfigured(
                 sensor_normals,
                 sun_readings,
@@ -120,17 +216,28 @@ def autonomous_attitude_solution(
             "rotation": None,
             "sun_body": None,
             "magnetic_body": None,
-            "detected_failed_sun_sensor": failed_sensor,
+            "detected_failed_sun_sensor": detected_sensor,
+            "active_failed_sun_sensor": active_failed_sensor,
+            "failure_source": failure_source,
             "sun_fault_detection": detection,
             "magnetometer_health": None,
+            "reliability_score": 0.0,
+            "reliability_label": "Very Low",
+            "reliability_details": None,
         }
 
-    magnetic_health = assess_magnetometer_health(
-        estimated_sun_body,
+    reliability = _reliability_output(
+        sensor_normals,
+        sun_readings,
         magnetic_measurement,
+        estimated_sun_body,
         sun_reference,
         magnetic_reference,
+        gains,
+        offsets,
+        active_failed_sensor,
     )
+    magnetic_health = reliability["magnetometer_health"]
 
     if not bool(magnetic_health["healthy"]):
         return {
@@ -138,9 +245,14 @@ def autonomous_attitude_solution(
             "rotation": None,
             "sun_body": estimated_sun_body,
             "magnetic_body": unit_vector(magnetic_measurement),
-            "detected_failed_sun_sensor": failed_sensor,
+            "detected_failed_sun_sensor": detected_sensor,
+            "active_failed_sun_sensor": active_failed_sensor,
+            "failure_source": failure_source,
             "sun_fault_detection": detection,
             "magnetometer_health": magnetic_health,
+            "reliability_score": reliability["score"],
+            "reliability_label": reliability["label"],
+            "reliability_details": reliability,
         }
 
     estimated_magnetic_body = unit_vector(magnetic_measurement)
@@ -157,9 +269,14 @@ def autonomous_attitude_solution(
             "rotation": None,
             "sun_body": estimated_sun_body,
             "magnetic_body": estimated_magnetic_body,
-            "detected_failed_sun_sensor": failed_sensor,
+            "detected_failed_sun_sensor": detected_sensor,
+            "active_failed_sun_sensor": active_failed_sensor,
+            "failure_source": failure_source,
             "sun_fault_detection": detection,
             "magnetometer_health": magnetic_health,
+            "reliability_score": reliability["score"],
+            "reliability_label": reliability["label"],
+            "reliability_details": reliability,
         }
 
     return {
@@ -167,7 +284,95 @@ def autonomous_attitude_solution(
         "rotation": rotation,
         "sun_body": estimated_sun_body,
         "magnetic_body": estimated_magnetic_body,
-        "detected_failed_sun_sensor": failed_sensor,
+        "detected_failed_sun_sensor": detected_sensor,
+        "active_failed_sun_sensor": active_failed_sensor,
+        "failure_source": failure_source,
         "sun_fault_detection": detection,
         "magnetometer_health": magnetic_health,
+        "reliability_score": reliability["score"],
+        "reliability_label": reliability["label"],
+        "reliability_details": reliability,
     }
+
+
+class AutonomousAttitudeManager:
+    """Stateful attitude manager with persistent Sun-sensor fault memory."""
+
+    def __init__(
+        self,
+        confirmations_required: int = 2,
+        gains: np.ndarray = SUN_GAINS,
+        offsets: np.ndarray = SUN_OFFSETS,
+    ) -> None:
+        if confirmations_required < 1:
+            raise ValueError("confirmations_required must be at least 1.")
+
+        self.confirmations_required = int(confirmations_required)
+        self.gains = np.asarray(gains, dtype=float)
+        self.offsets = np.asarray(offsets, dtype=float)
+        self.reset()
+
+    def reset(self) -> None:
+        """Clear all remembered fault state."""
+        self.latched_failed_sun_sensor: int | None = None
+        self._candidate_sensor: int | None = None
+        self._candidate_count = 0
+
+    def _update_fault_memory(self, detected_sensor: int | None) -> None:
+        if self.latched_failed_sun_sensor is not None:
+            return
+
+        if detected_sensor is None:
+            return
+
+        detected_sensor = int(detected_sensor)
+
+        if self._candidate_sensor == detected_sensor:
+            self._candidate_count += 1
+        else:
+            self._candidate_sensor = detected_sensor
+            self._candidate_count = 1
+
+        if self._candidate_count >= self.confirmations_required:
+            self.latched_failed_sun_sensor = detected_sensor
+
+    def update(
+        self,
+        sensor_normals: np.ndarray,
+        sun_readings: np.ndarray,
+        magnetic_measurement: np.ndarray,
+        sun_reference: np.ndarray,
+        magnetic_reference: np.ndarray,
+    ) -> dict[str, object]:
+        """Process one sensor sample and update persistent fault memory."""
+        detection = detect_failed_sun_sensor(
+            sun_readings,
+            magnetic_measurement,
+            sun_reference,
+            magnetic_reference,
+            self.gains,
+            self.offsets,
+        )
+        detected_sensor = detection["failed_sensor"]
+        self._update_fault_memory(
+            None if detected_sensor is None else int(detected_sensor)
+        )
+
+        solution = autonomous_attitude_solution(
+            sensor_normals,
+            sun_readings,
+            magnetic_measurement,
+            sun_reference,
+            magnetic_reference,
+            gains=self.gains,
+            offsets=self.offsets,
+            remembered_failed_sun_sensor=self.latched_failed_sun_sensor,
+        )
+
+        solution["latched_failed_sun_sensor"] = (
+            self.latched_failed_sun_sensor
+        )
+        solution["fault_candidate_sensor"] = self._candidate_sensor
+        solution["fault_candidate_count"] = self._candidate_count
+
+        return solution
