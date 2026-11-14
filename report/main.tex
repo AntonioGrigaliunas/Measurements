@@ -365,177 +365,107 @@ The estimator parameters and decision thresholds are frozen before generating th
 
 \section{Results}
 
-\subsection{Nominal Attitude-Estimation Accuracy}
+\subsection{Nominal Performance}
 
-The nominal case uses the hardware-informed baseline parameters described in Section~3.7, together with the explicitly stated Sun-sensor gain and offset assumptions. Across 1000 uniformly distributed random spacecraft attitudes, the mean full-attitude error was
-\begin{equation}
-    \bar{\theta}_e = 2.318^\circ,
-\end{equation}
-with a standard deviation of \SI{1.183}{\degree}. The 95th-percentile error was \SI{4.516}{\degree}, while the maximum observed error was \SI{6.841}{\degree}. These values indicate that the proposed low-cost sensor combination provides coarse attitude knowledge with errors of only a few degrees under nominal conditions.
+The final temporal validation preserves the nominal accuracy of the original sensor-fusion system. In the healthy sequence, the system remains in \texttt{NORMAL} mode for 99.2\% of the post-injection comparison interval, produces full attitude for 99.6\% of the samples, and gives a mean full-attitude error of \SI{2.337}{\degree}. The 95th-percentile error is \SI{4.476}{\degree}. Thus, the added autonomy logic does not materially degrade the baseline attitude solution.
 
-The non-zero error obtained even when random measurement noise is set to zero is caused by the deliberately retained gain, offset, bias, and scale-factor mismatches in the sensor models. The simulation therefore represents a non-ideal sensor system with fixed channel nonuniformities and magnetometer errors rather than an ideal mathematical sensor pair.
+\subsection{Automatic Sun-Sensor Detection and Reconfiguration}
 
-\IfFileExists{figures/attitude_error_histogram.png}{
+A complete zero-output failure was injected independently into each of the six Sun-sensor faces. Figure~\ref{fig:reconfiguration} compares the standard estimator, the automatic detector/reconfiguration method, and a known-fault benchmark in which the failed face is supplied directly to the estimator.
+
+\IfFileExists{figures/final_sun_reconfiguration.png}{
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.72\textwidth]{figures/attitude_error_histogram.png}
-    \caption{Distribution of full-attitude error for the nominal sensor case over 1000 random attitudes.}
-    \label{fig:attitude-histogram}
+    \includegraphics[width=0.86\textwidth]{figures/final_sun_reconfiguration.png}
+    \caption{Mean attitude error for each failed Sun-sensor face using the standard estimator, automatic reconfiguration, and a known-fault benchmark.}
+    \label{fig:reconfiguration}
 \end{figure}
 }{}
 
-\subsection{Sensor-Noise Sensitivity}
+Across the six faces, the standard estimator gives approximately \SIrange{17.8}{20.0}{\degree} mean error. Automatic fault detection reduces this to approximately \SIrange{3.8}{4.7}{\degree}, corresponding to a 75.6--78.7\% improvement. If the failed face is known perfectly, the reconfigured estimator achieves approximately \SI{2.9}{\degree} mean error. The automatic detector identifies approximately 92--96\% of failures when the failed face should have a substantial illumination signal, while the healthy instantaneous false-alarm rate is 0.18\%.
 
-Table~\ref{tab:noise-sensitivity} shows the effect of Sun-sensor noise at the nominal RM3100 magnetometer-noise level. The mean attitude error increases from approximately \SI{1.57}{\degree} with no Sun-sensor random noise to approximately \SI{4.64}{\degree} when the Sun-sensor noise standard deviation is increased to 0.05.
+The remaining gap between automatic and known-fault performance is principally caused by observability: a sensor that is already on the dark side produces approximately zero whether it is healthy or failed.
+
+\subsection{Persistent Fault Memory}
+
+The temporal validation tests whether a detected Sun-sensor failure remains excluded as the CubeSat rotates through different illumination conditions. For the $+X$ fault, the final rolling confirmation logic latches the failure at sample 428 after the fault begins at sample 300.
+
+Without persistent memory, 3.56\% of post-fault samples produce a full-attitude output whose true error exceeds $10^\circ$. With the persistent-memory manager this falls to 1.44\%, as shown in Fig.~\ref{fig:memory-benefit}.
+
+\IfFileExists{figures/final_persistent_memory_benefit.png}{
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.65\textwidth]{figures/final_persistent_memory_benefit.png}
+    \caption{Reduction in unsafe full-attitude outputs after adding persistent Sun-sensor fault memory.}
+    \label{fig:memory-benefit}
+\end{figure}
+}{}
+
+\subsection{Autonomous Operating Modes}
+
+Table~\ref{tab:final-results} summarizes the post-fault portion of the continuous trajectory. The Unsafe $>10^\circ$ percentage is the fraction of all post-fault samples in which the system outputs full attitude and the true simulation error exceeds $10^\circ$.
 
 \begin{table}[H]
 \centering
-\caption{Full-attitude error versus Sun-sensor noise at the nominal RM3100 magnetometer-noise level.}
-\label{tab:noise-sensitivity}
-\small
+\caption{Post-fault operating performance of the frozen final system.}
+\label{tab:final-results}
+\scriptsize
 \renewcommand{\arraystretch}{1.15}
-\setlength{\tabcolsep}{5pt}
-\begin{tabular}{|c|c|c|c|c|}
+\setlength{\tabcolsep}{2.6pt}
+\begin{tabular}{|l|c|c|c|c|c|c|c|}
 \hline
-\textbf{Sun noise std.} & \textbf{Mean error [deg]} & \textbf{Std. [deg]} & \textbf{95th pct. [deg]} & \textbf{Max [deg]} \\
+\textbf{Scenario} & \textbf{NORMAL} & \textbf{RECONF.} & \textbf{SUN\_SAFE} & \textbf{Full att.} & \textbf{Mean [deg]} & \textbf{P95 [deg]} & \textbf{Unsafe [\%]} \\
 \hline
-0.000 & 1.572 & 0.765 & 2.887 & 3.276 \\
+Healthy & 99.2\% & 0.3\% & 0.4\% & 99.6\% & 2.337 & 4.476 & 0.33 \\
 \hline
-0.005 & 1.624 & 0.798 & 3.005 & 4.217 \\
+Sun fault & 13.9\% & 83.1\% & 3.0\% & 97.0\% & 2.542 & 5.918 & 1.44 \\
 \hline
-0.010 & 1.784 & 0.881 & 3.360 & 5.037 \\
+Magnetic fault & 7.7\% & 0.0\% & 92.3\% & 7.7\% & 9.296 & 9.761 & 0.11 \\
 \hline
-0.020 & 2.318 & 1.183 & 4.516 & 6.841 \\
-\hline
-0.050 & 4.641 & 2.524 & 9.271 & 14.159 \\
+Combined fault & 5.0\% & 2.6\% & 92.4\% & 7.6\% & 9.534 & 10.854 & 0.67 \\
 \hline
 \end{tabular}
 \end{table}
 
-In contrast, varying the magnetometer random noise from zero to several times the nominal RM3100 noise produced only small changes in the mean attitude error for a fixed Sun-sensor noise level. The separate fault-analysis Monte Carlo run gives a nearly identical healthy-case mean of \\SI{2.312}{\\degree}; the small difference from \\SI{2.318}{\\degree} above is due to a different random noise realization. This shows that, within the physically realistic range tested, the nominal attitude accuracy is dominated by the coarse Sun-sensor uncertainty rather than by the intrinsic magnetometer noise.
-
-\IfFileExists{figures/attitude_error_vs_sensor_noise.png}{
+\IfFileExists{figures/final_post_fault_modes.png}{
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.78\textwidth]{figures/attitude_error_vs_sensor_noise.png}
-    \caption{Mean full-attitude error as a function of Sun-sensor and magnetometer random-noise levels.}
-    \label{fig:noise-sensitivity}
+    \includegraphics[width=0.82\textwidth]{figures/final_post_fault_modes.png}
+    \caption{Autonomous operating-mode selection during the post-fault portion of each trajectory.}
+    \label{fig:post-fault-modes}
 \end{figure}
 }{}
 
-\subsection{Fault Analysis}
+For a persistent Sun-sensor failure, the system spends 83.1\% of the post-fault sequence in \texttt{RECONFIGURED} mode and still provides full attitude in 97.0\% of samples. The mean error of the accepted full-attitude outputs is only \SI{2.542}{\degree}, compared with approximately \SI{18.9}{\degree} for the earlier unreconfigured static fault case.
 
-The fuzzy reliability system was then evaluated under nominal and faulted conditions. Table~\ref{tab:fault-results} compares the healthy system with a failed Sun sensor, a \SI{7.5}{\micro\tesla} magnetic disturbance, and the simultaneous occurrence of both faults.
+For the \SI{7.5}{\micro\tesla} magnetic disturbance, the system enters \texttt{SUN\_SAFE} in 92.3\% of post-fault samples. The combined Sun and magnetic fault produces essentially the same safe-mode behaviour, with 92.4\% \texttt{SUN\_SAFE}. This demonstrates the intended graceful degradation: when the magnetic measurement becomes unreliable, the system normally stops reporting full three-dimensional attitude instead of continuing to trust a corrupted TRIAD solution.
 
-\begin{table}[H]
-\centering
-\caption{Attitude-estimation and fuzzy-reliability results for the principal fault scenarios.}
-\label{tab:fault-results}
-\footnotesize
-\renewcommand{\arraystretch}{1.15}
-\setlength{\tabcolsep}{3.5pt}
-\begin{tabular}{|l|c|c|c|c|}
-\hline
-\textbf{Scenario} & \textbf{Mean error [deg]} & \textbf{95th pct. [deg]} & \textbf{Mean reliability [\%]} & \textbf{Reliability $<40$\% [\%]} \\
-\hline
-Healthy & 2.312 & 4.429 & 81.67 & 0.0 \\
-\hline
-Sun sensor failed & 18.886 & 71.185 & 47.25 & 39.9 \\
-\hline
-Magnetic disturbance & 5.416 & 9.176 & 39.57 & 60.6 \\
-\hline
-Combined fault & 21.571 & 72.683 & 25.84 & 85.0 \\
-\hline
-\end{tabular}
-\end{table}
+\subsection{Fuzzy Confidence}
 
-The healthy system maintains both low attitude error and high fuzzy reliability. A complete Sun-sensor failure produces the largest single-sensor degradation, increasing the mean attitude error to approximately \SI{18.9}{\degree}. The magnetic disturbance causes a smaller mean attitude error of approximately \SI{5.4}{\degree}, but the fuzzy system identifies the abnormal magnetic measurement more consistently, giving a mean reliability below 40\%. When both faults are present, the mean attitude error rises above \SI{21}{\degree} and 85\% of the cases are classified below 40\% reliability.
+The fuzzy score remains a confidence indicator rather than the hard safety decision. Figure~\ref{fig:fuzzy-final} shows the mean post-fault score for the four final scenarios.
 
-The six individual Sun-sensor failures produced similar averaged results because the sensor geometry and attitude sampling are approximately symmetric. This supports the interpretation that the all-face comparison is primarily a consistency check rather than evidence that one CubeSat face is intrinsically more critical than another.
-
-\IfFileExists{figures/fault_analysis_summary.png}{
+\IfFileExists{figures/final_fuzzy_confidence.png}{
 \begin{figure}[H]
     \centering
-    \includegraphics[width=0.80\textwidth]{figures/fault_analysis_summary.png}
-    \caption{Effect of healthy and faulted sensor scenarios on mean attitude error and fuzzy reliability.}
-    \label{fig:fault-summary}
+    \includegraphics[width=0.72\textwidth]{figures/final_fuzzy_confidence.png}
+    \caption{Mean fuzzy confidence during the post-fault portion of the final continuous simulations.}
+    \label{fig:fuzzy-final}
 \end{figure}
 }{}
 
-\subsection{Fuzzy Reliability Validation}
+The mean confidence follows the expected ordering: 80.70\% in the healthy case, 66.46\% with a Sun-sensor fault, 40.22\% under magnetic disturbance, and 31.41\% for the combined fault. The score therefore communicates progressively worsening sensing conditions while the explicit fault logic determines whether the estimator should remain normal, reconfigure, or suppress full attitude output.
 
-The reliability score is intended to provide an onboard indication of measurement quality without using the true attitude error, which is available only inside the simulation. Its usefulness can therefore be evaluated by comparing the fuzzy score with the independently calculated simulation error.
-
-The results show the expected inverse trend: cases with small attitude error are concentrated at high reliability, while large-error fault cases move toward lower reliability scores. The mean reliability decreases from 81.67\% in the healthy case to 47.25\% for a failed Sun sensor, 39.57\% under magnetic disturbance, and 25.84\% for the combined fault. This demonstrates that the fuzzy indicators contain useful information about the quality of the attitude solution.
-
-The separation is not perfect. In particular, the mean score for a failed Sun sensor remains within the \emph{Medium} reliability range, and some high-error samples are not classified as very low reliability. This is an important limitation rather than a numerical error: the four selected quality indicators do not uniquely determine the true attitude error. The fuzzy system should therefore be interpreted as a confidence indicator rather than as an exact predictor of angular error.
-
-The five-level output formulation reduces the strong three-band quantization observed with an earlier Low/Medium/High formulation, although horizontal clustering remains because the weighted-sum method still uses discrete representative output values. This motivates centroid defuzzification with continuous output membership functions as a possible future improvement.
-
-\IfFileExists{figures/fuzzy_reliability_validation.png}{
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.80\textwidth]{figures/fuzzy_reliability_validation.png}
-    \caption{Fuzzy reliability score compared with the true simulation attitude error for healthy and faulted cases.}
-    \label{fig:fuzzy-validation}
-\end{figure}
-}{}
-
-\subsection{Magnetic-Disturbance Sweep}
-
-A systematic magnetic-disturbance sweep was performed to evaluate the transition from nominal operation to an increasingly corrupted magnetometer measurement. The disturbance direction was kept fixed while its static magnitude was increased from 0 to \SI{7.5}{\micro\tesla}. The upper value is a conservative sensitivity-test level chosen to be comparable in order of magnitude with published CubeSat magnetorquer interference exceeding \SI{7.5}{\micro\tesla} peak-to-peak \cite{miles2016fluxgate,hoffmann2022spacecraftnoise}; it should not be interpreted as a reproduction of the measured time-varying waveform. The results are shown in Table~\ref{tab:mag-sweep}.
-
-\begin{table}[H]
-\centering
-\caption{Effect of magnetic-disturbance magnitude on attitude error and fuzzy reliability.}
-\label{tab:mag-sweep}
-\footnotesize
-\renewcommand{\arraystretch}{1.15}
-\setlength{\tabcolsep}{3.5pt}
-\begin{tabular}{|c|c|c|c|c|}
-\hline
-\textbf{Disturbance [$\mu$T]} & \textbf{Mean error [deg]} & \textbf{95th pct. [deg]} & \textbf{Mean reliability [\%]} & \textbf{Reliability $<40$\% [\%]} \\
-\hline
-0.00 & 2.312 & 4.429 & 81.67 & 0.0 \\
-\hline
-1.25 & 2.560 & 4.507 & 77.53 & 0.1 \\
-\hline
-2.50 & 2.992 & 4.845 & 67.69 & 2.2 \\
-\hline
-3.75 & 3.526 & 5.542 & 59.97 & 7.4 \\
-\hline
-5.00 & 4.121 & 6.661 & 53.14 & 19.0 \\
-\hline
-7.50 & 5.416 & 9.176 & 39.57 & 60.6 \\
-\hline
-\end{tabular}
-\end{table}
-
-The trend is monotonic over the tested range: increasing magnetic disturbance increases the attitude error while decreasing the fuzzy reliability score. From 0 to \SI{7.5}{\micro\tesla}, the mean attitude error increases from \SI{2.31}{\degree} to \SI{5.42}{\degree}, while the mean reliability falls from 81.67\% to 39.57\%. At the maximum disturbance, 60.6\% of the simulations are classified below 40\% reliability. This provides direct evidence that the fuzzy layer responds progressively to worsening magnetometer corruption rather than only reacting after a complete sensor failure.
-
-\IfFileExists{figures/magnetometer_disturbance_sweep.png}{
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.80\textwidth]{figures/magnetometer_disturbance_sweep.png}
-    \caption{Attitude error and fuzzy reliability as functions of magnetic-disturbance magnitude.}
-    \label{fig:mag-sweep}
-\end{figure}
-}{}
-
-\IfFileExists{figures/magnetometer_fault_detection.png}{
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=0.75\textwidth]{figures/magnetometer_fault_detection.png}
-    \caption{Percentage of cases classified below 40\% reliability as magnetic disturbance increases.}
-    \label{fig:mag-detection}
-\end{figure}
-}{}
+The final results show that the main benefit of the proposed architecture is not merely a lower average error. The system changes its behaviour according to measurement quality: it recovers most of the lost performance after a Sun-sensor failure, remembers confirmed failures over time, and deliberately degrades to Sun-only sensing when the magnetic reference becomes unreliable.
 
 \section{Conclusion and Future Works}
 
-The simulation demonstrates that a six-face coarse Sun-sensor array and a three-axis magnetometer can be combined to estimate the full CubeSat attitude using TRIAD, while a fuzzy-logic layer can provide a separate confidence indication for the estimate. The simulation framework also allows controlled injection of sensor noise, calibration mismatch, sensor failure, and magnetic disturbance.
+This project developed a reliability-aware, self-reconfiguring attitude-determination architecture for a CubeSat using six coarse Sun sensors and one three-axis magnetometer. The baseline TRIAD solution was extended with automatic Sun-sensor fault detection, fault-tolerant Sun-vector reconstruction, rolling persistent fault memory, a dedicated magnetometer health gate, autonomous operating modes, and a fuzzy confidence output.
 
-Future work should include hardware-in-the-loop or laboratory validation, replacement of assumed Sun-sensor channel variations with measured calibration data, implementation and validation of the Sun-sensor health diagnostic, use of orbit- and location-dependent Sun and geomagnetic reference models, explicit eclipse handling, a sweep over magnetic-disturbance direction as well as magnitude, and possible addition of a gyroscope for dynamic propagation between absolute vector measurements. The fuzzy reliability system could also be improved using continuous output membership functions with centroid defuzzification to reduce the remaining score quantization.
+The final simulation demonstrates that the autonomy logic preserves nominal performance while substantially improving behaviour under faults. A failed Sun sensor that previously produced approximately \SI{19}{\degree} mean attitude error can be handled automatically, with the persistent final system providing full attitude through 97\% of the post-fault trajectory at a mean error of \SI{2.542}{\degree}. Persistent fault memory reduces unsafe post-fault outputs above $10^\circ$ from 3.56\% to 1.44\%. Under the magnetic-disturbance case, the system selects Sun-safe operation in 92.3\% of the post-fault samples instead of blindly trusting the corrupted magnetic reference. The fuzzy score provides a complementary interpretation of sensing quality, decreasing from 80.7\% in healthy operation to 31.4\% for the combined fault.
+
+The project is a simulation-level demonstration rather than a flight-ready ADCS. Future work should therefore focus on laboratory validation using physical coarse Sun sensors and a magnetometer, measured calibration data, orbit-dependent Sun ephemerides and geomagnetic-field models, eclipse handling, and validation against a wider set of magnetic-disturbance directions and time histories. The hard-fault model should also be extended beyond a zero-output failure to include stuck-at values, gradual bias drift, intermittent faults, and multiple simultaneous Sun-sensor failures. A gyroscope could subsequently be added to propagate attitude during periods in which only one absolute reference vector is trustworthy.
+
+The central result is that low-cost sensing can be made more useful by coupling attitude estimation with explicit measurement-health reasoning. Rather than always returning an attitude, the proposed system can detect, remember, reconfigure, and deliberately degrade its output according to the information that remains trustworthy.
 
 \bibliographystyle{ieeetr}
 \bibliography{references}
