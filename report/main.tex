@@ -231,7 +231,7 @@ If $N_h$ Sun-sensor channels are reported healthy by a basic channel-status or s
 \begin{equation}
     H_s = \frac{N_h}{6}.
 \end{equation}
-This quantity is fuzzified into \emph{poor}, \emph{degraded}, and \emph{good} states.
+This quantity is fuzzified into \emph{poor}, \emph{degraded}, and \emph{good} states. In the present simulation, a deliberately injected hard failure is assumed to be detected by this status monitor, so the failed channel is counted as unhealthy. This is an explicit modelling assumption; a flight implementation would require a real plausibility check or built-in-test mechanism.
 
 \subsubsection{Sun--Magnetic Vector Consistency}
 
@@ -265,6 +265,7 @@ The magnetic-field quantities are expressed in normalized units in the simulatio
         \|\mathbf{m}_{\mathrm{meas}}\|-1
     \right|.
 \end{equation}
+In a hardware implementation, the measured field magnitude would first be normalized by the expected local geomagnetic-field magnitude from the onboard field model.
 
 \subsubsection{Sun-Sensor Reconstruction Residual}
 
@@ -510,7 +511,7 @@ The five-level output formulation reduces the strong three-band quantization obs
 
 \subsection{Magnetic-Disturbance Sweep}
 
-A systematic magnetic-disturbance sweep was performed to evaluate the transition from nominal operation to an increasingly corrupted magnetometer measurement. The disturbance direction was kept fixed while its magnitude was increased from 0 to \SI{7.5}{\micro\tesla}. The results are shown in Table~\ref{tab:mag-sweep}.
+A systematic magnetic-disturbance sweep was performed to evaluate the transition from nominal operation to an increasingly corrupted magnetometer measurement. The disturbance direction was kept fixed while its static magnitude was increased from 0 to \SI{7.5}{\micro\tesla}. The upper value is a conservative sensitivity-test level chosen to be comparable in order of magnitude with published CubeSat magnetorquer interference exceeding \SI{7.5}{\micro\tesla} peak-to-peak \cite{miles2016fluxgate,hoffmann2022spacecraftnoise}; it should not be interpreted as a reproduction of the measured time-varying waveform. The results are shown in Table~\ref{tab:mag-sweep}.
 
 \begin{table}[H]
 \centering
