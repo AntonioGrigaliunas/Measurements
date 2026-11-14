@@ -316,7 +316,7 @@ Five output levels are used instead of only Low/Medium/High in order to reduce t
 
 \subsection{Sensor Model and Parameter Selection}
 
-The Sun-sensor model uses a baseline normalized random noise standard deviation of 0.02. NASA's reported \SI{5}{\degree} (3$\sigma$) coarse Sun-sensor accuracy can be related approximately to the cosine response near \SI{45}{\degree} incidence:
+The Sun-sensor model uses a baseline normalized random noise standard deviation of 0.02. NASA's reported \SI{5}{\degree} (3$\sigma$) coarse Sun-sensor accuracy is an angular-accuracy specification, not a direct amplitude-noise specification. As an order-of-magnitude engineering approximation, it can be related to the local slope of a cosine response near \SI{45}{\degree} incidence:
 \begin{equation}
     \sigma_I
     \approx
@@ -327,8 +327,9 @@ The Sun-sensor model uses a baseline normalized random noise standard deviation 
     \right)
     \approx 0.0206.
 \end{equation}
+The resulting value is used only as a plausible baseline noise scale for the sensitivity study; it is not claimed to be a manufacturer-specified photodiode noise standard deviation.
 
-The magnetometer parameters are based on a PNI RM3100-class device. Published nanosatellite work reports a worst-axis noise level of \SI{17}{\nano\tesla}, bias of \SI{440}{\nano\tesla}, and scale-factor error of 4885 ppm \cite{colagrossi2023hermes}. The Earth's surface magnetic-field intensity is approximately \SIrange{25}{65}{\micro\tesla} \cite{noaaGeomagFAQ}; a representative value of \SI{50}{\micro\tesla} is used for normalization.
+The magnetometer parameters are based on a PNI RM3100-class device. Published nanosatellite work reports a worst-axis noise level of \SI{17}{\nano\tesla}, bias of \SI{440}{\nano\tesla}, and scale-factor error of 4885 ppm \cite{colagrossi2023hermes}. NOAA reports an Earth-surface magnetic-field intensity of approximately \SIrange{25}{65}{\micro\tesla} \cite{noaaGeomagFAQ}. A representative value of \SI{50}{\micro\tesla} is used only to normalize the sensor-error magnitudes in this simulation; an operational spacecraft would instead use the local field magnitude from a geomagnetic model at its orbital position.
 
 Table~\ref{tab:sensor-parameters} summarizes the parameters and explicitly distinguishes sourced quantities from deliberate sensitivity-study assumptions.
 
