@@ -7,7 +7,7 @@
 \usepackage{siunitx}
 \usepackage{graphicx}
 \usepackage{float}
-\usepackage{hyperref}
+\usepackage[hidelinks]{hyperref}
 
 \title{Intelligent Multi-Sensor Attitude Determination and Reliability Assessment for a CubeSat}
 \author{Antonio Grigaliunas}
@@ -324,8 +324,9 @@ Table~\ref{tab:sensor-parameters} summarizes the parameters and explicitly disti
 \centering
 \caption{Sensor and environment parameters used in the simulation.}
 \label{tab:sensor-parameters}
-\small
-\begin{tabularx}{\textwidth}{@{}p{3.0cm}p{3.5cm}p{3.0cm}X@{}}
+\footnotesize
+\renewcommand{\arraystretch}{1.15}
+\begin{tabularx}{\textwidth}{@{}p{2.6cm}p{3.1cm}p{3.6cm}X@{}}
 \toprule
 \textbf{Subsystem} & \textbf{Parameter} & \textbf{Value} & \textbf{Basis} \\
 \midrule
@@ -346,12 +347,12 @@ Sun sensor
 
 Sun sensor
 & Per-face gain factors
-& $[1.03,0.98,0.96,1.02,1.05,0.97]$
+& \shortstack[l]{$[1.03,\ 0.98,\ 0.96,$\\$1.02,\ 1.05,\ 0.97]$}
 & Deliberate residual calibration-mismatch assumption. \\
 
 Sun sensor
 & Per-face offsets
-& $[0.010,0.005,0,0.008,0.012,0.004]$
+& \shortstack[l]{$[0.010,\ 0.005,\ 0,$\\$0.008,\ 0.012,\ 0.004]$}
 & Deliberate residual zero-bias assumption. \\
 
 Magnetometer
@@ -454,8 +455,6 @@ For each Monte Carlo sample, a uniformly distributed random three-dimensional ro
 The proposed architecture demonstrates that a six-face coarse Sun-sensor array and a three-axis magnetometer can be combined to estimate the full CubeSat attitude using TRIAD, while a fuzzy-logic layer can provide an independent indication of estimate reliability. The simulation framework also allows controlled injection of sensor noise, calibration mismatch, sensor failure, and magnetic disturbance.
 
 Future work should include hardware-in-the-loop or laboratory validation, replacement of assumed Sun-sensor calibration errors with measured calibration data, use of orbit- and location-dependent Sun and geomagnetic reference models, explicit eclipse handling, and possible addition of a gyroscope for dynamic propagation between absolute vector measurements. The fuzzy reliability system could also be improved using continuous output membership functions with centroid defuzzification to reduce the remaining score quantization.
-
-\section{References}
 
 \bibliographystyle{ieeetr}
 \bibliography{references}
