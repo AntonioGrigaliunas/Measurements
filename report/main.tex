@@ -290,11 +290,38 @@ Four crisp indicators are used:
     evaluated only over currently usable Sun-sensor channels.
 \end{enumerate}
 
-The inputs are fuzzified using triangular and trapezoidal membership functions. Conjunction uses MIN and competing rules are aggregated with MAX, following the MA4822 fuzzy-logic method. Five output classes are used: Very Low, Low, Medium, High, and Very High, represented by the crisp values $\{10,30,50,70,90\}$. Weighted-sum defuzzification gives
+The exact input membership functions implemented in the frozen model are summarized in Table~\ref{tab:fuzzy-membership}. Triangular sets are written as $(a,b,c)$ and trapezoidal sets as $(a,b,c,d)$.
+
+\begin{table}[H]
+\centering
+\caption{Fuzzy input membership functions used in the reliability estimator.}
+\label{tab:fuzzy-membership}
+\scriptsize
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabularx}{\textwidth}{|p{2.7cm}|X|X|X|}
+\hline
+\textbf{Input} & \textbf{Good / low-severity} & \textbf{Moderate / degraded} & \textbf{Poor / high-severity} \\
+\hline
+Sun health $H_s$ & Good: trap. $(5/6,1,1,1)$ & Degraded: tri. $(0.65,5/6,1)$ & Poor: trap. $(0,0,0.55,0.75)$ \\
+\hline
+Consistency $e_c$ [deg] & Good: trap. $(0,0,1,3)$ & Moderate: tri. $(1,5,10)$ & Poor: trap. $(6,12,30,30)$ \\
+\hline
+Magnetic norm $e_m$ & Good: trap. $(0,0,0.02,0.05)$ & Moderate: tri. $(0.02,0.07,0.15)$ & Poor: trap. $(0.08,0.15,0.50,0.50)$ \\
+\hline
+Sun residual $e_s$ & Good: trap. $(0,0,0.015,0.035)$ & Moderate: tri. $(0.02,0.055,0.10)$ & Poor: trap. $(0.06,0.12,0.50,0.50)$ \\
+\hline
+\end{tabularx}
+\end{table}
+
+The rule base follows an interpretable severity hierarchy. A \emph{Very High} output requires all four indicators to be good. \emph{High} is produced when only one indicator is degraded or moderate while the others remain good. \emph{Medium} represents combinations of two moderate/degraded indicators. \emph{Low} is activated by one poor indicator with otherwise acceptable measurements, or by several simultaneous moderate indicators. \emph{Very Low} is reserved for poor Sun-channel health or combinations in which a poor consistency, magnetic, or Sun-residual condition is accompanied by another degraded or poor indicator.
+
+Conjunction is implemented with MIN and competing rules are aggregated with MAX, following the MA4822 fuzzy-logic method. The five output classes Very Low, Low, Medium, High, and Very High are represented by the crisp values $\{10,30,50,70,90\}$. Weighted-sum defuzzification gives
 \begin{equation}
     R_{\mathrm{rel}}=
-    \frac{\sum_k V_kP_k}{\sum_kP_k}.
+    \frac{\sum_k V_kP_k}{\sum_kP_k},
 \end{equation}
+where $P_k$ is the aggregated possibility of output class $k$ and $V_k$ is its representative crisp value.
 
 The confidence score does not override the hard safety logic. A measurement can therefore be rejected by the magnetic-health gate even if the fuzzy score is not numerically zero.
 
@@ -342,32 +369,31 @@ Monte Carlo samples per static case & 1000 & Simulation-design choice. \\
 
 \section{Implementation}
 
-The complete system is implemented in Python using NumPy for numerical operations and Matplotlib for validation figures. The code is separated into sensor simulation, attitude estimation, fault detection, autonomy logic, fuzzy confidence, and validation scripts.
+The complete system is implemented in Python using NumPy for numerical operations and Matplotlib for validation figures. The software is divided into sensor models, attitude estimation, Sun-sensor fault isolation, autonomous mode management, fuzzy confidence assessment, and validation scripts. The implementation is evaluated using two complementary simulation procedures.
 
-The principal software components are:
-\begin{itemize}
-    \item \texttt{sun\_sensor.py}: six-face cosine Sun-sensor model;
-    \item \texttt{magnetometer.py}: three-axis magnetometer model;
-    \item \texttt{attitude\_estimation.py}: nominal and reconfigured Sun-vector estimation, TRIAD, and attitude-error calculations;
-    \item \texttt{sun\_sensor\_fault\_detection.py}: automatic geometric Sun-sensor fault isolation;
-    \item \texttt{autonomous\_attitude.py}: magnetic-health gate, operating-mode manager, persistent fault memory, and integrated fuzzy confidence output;
-    \item \texttt{fuzzy\_reliability.py}: membership functions, fuzzy rule base, and weighted-sum defuzzification;
-    \item \texttt{automatic\_reconfiguration\_analysis.py}: static single-fault detection and recovery benchmark;
-    \item \texttt{final\_system\_analysis.py}: continuous trajectory validation with persistent faults; and
-    \item \texttt{report\_figures.py}: frozen final report figure generation.
-\end{itemize}
+For the static Monte Carlo studies, each trial follows the same sequence:
+\begin{enumerate}
+    \item generate a uniformly distributed random spacecraft attitude using a normalized random quaternion;
+    \item rotate the fixed reference Sun and magnetic vectors into the body frame;
+    \item generate noisy Sun-sensor and magnetometer measurements using the physical sensor models;
+    \item inject the requested fault or disturbance scenario;
+    \item run the nominal or autonomous estimator; and
+    \item compare the estimated rotation matrix with the known simulated attitude to calculate the principal attitude error.
+\end{enumerate}
 
-Two complementary validation methods are used. First, uniformly distributed random spacecraft attitudes are generated from normalized random quaternions for the static Monte Carlo studies. This isolates sensor geometry and provides fair comparisons across all six possible failed Sun-sensor faces.
+One thousand random attitudes are used for each static case. This allows the six possible failed Sun-sensor faces to be compared without favouring a particular spacecraft orientation.
 
-Second, the final autonomous system is tested on a smoothly changing attitude trajectory. Faults are injected from sample 300 of a 1200-sample sequence. This temporal test is required because persistent fault memory cannot be evaluated from independent random snapshots. The same fault then remains active while illumination geometry changes, allowing the simulation to verify detection, memory latching, reconfiguration, safe-mode selection, and fuzzy confidence over time.
+A second, time-ordered validation is used for persistent fault memory and mode switching. The spacecraft follows a smoothly changing 1200-sample attitude trajectory. The first 300 samples are fault-free; from sample 300 onward the selected Sun-sensor and/or magnetic fault remains active. At every sample the autonomous manager performs fault detection, updates the rolling confirmation memory, reconstructs the Sun vector if required, evaluates magnetometer health, selects an operating mode, and calculates the fuzzy confidence score. Full-attitude error is evaluated only when the system actually outputs a TRIAD attitude.
 
-The estimator parameters and decision thresholds are frozen before generating the final figures. The final report therefore presents validation of one fixed architecture rather than further tuning against the reported outcomes.
+Four final temporal scenarios are compared: healthy operation, a persistent $+X$ Sun-sensor failure, a \SI{7.5}{\micro\tesla} magnetic disturbance, and the simultaneous occurrence of both faults. The main metrics are operating-mode fractions, full-attitude availability, mean and 95th-percentile attitude error, unsafe full-attitude outputs above $10^\circ$, and mean fuzzy confidence.
+
+The estimator parameters and decision thresholds are frozen before generating the final figures. The reported results therefore validate one fixed architecture rather than continuing to tune the algorithm against the final test outcomes.
 
 \section{Results}
 
 \subsection{Nominal Performance}
 
-The final temporal validation preserves the nominal accuracy of the original sensor-fusion system. In the healthy sequence, the system remains in \texttt{NORMAL} mode for 99.2\% of the post-injection comparison interval, produces full attitude for 99.6\% of the samples, and gives a mean full-attitude error of \SI{2.337}{\degree}. The 95th-percentile error is \SI{4.476}{\degree}. Thus, the added autonomy logic does not materially degrade the baseline attitude solution.
+The final temporal validation preserves the nominal accuracy of the original sensor-fusion system. In the healthy sequence, the system remains in \texttt{NORMAL} mode for 99.2\% of the final 900-sample comparison interval, produces full attitude for 99.6\% of the samples, and gives a mean full-attitude error of \SI{2.337}{\degree}. The 95th-percentile error is \SI{4.476}{\degree}. Thus, the added autonomy logic does not materially degrade the baseline attitude solution.
 
 \subsection{Sensor-Noise Sensitivity}
 
