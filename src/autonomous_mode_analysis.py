@@ -51,6 +51,7 @@ def run_mode_scenario(
 
     modes = Counter()
     full_attitude_errors = []
+    unsafe_full_attitude_count = 0
 
     for _ in range(n_samples):
         true_rotation = random_rotation_matrix(rng)
@@ -86,12 +87,13 @@ def run_mode_scenario(
         modes[mode] += 1
 
         if solution["rotation"] is not None:
-            full_attitude_errors.append(
-                attitude_error_degrees(
-                    true_rotation,
-                    solution["rotation"],
-                )
+            error = attitude_error_degrees(
+                true_rotation,
+                solution["rotation"],
             )
+            full_attitude_errors.append(error)
+            if error > 10.0:
+                unsafe_full_attitude_count += 1
 
     full_attitude_errors = np.asarray(full_attitude_errors)
 
@@ -109,6 +111,9 @@ def run_mode_scenario(
             if len(full_attitude_errors)
             else np.nan
         ),
+        "unsafe_full_attitude_fraction": (
+            unsafe_full_attitude_count / n_samples
+        ),
     }
     return result
 
@@ -118,11 +123,11 @@ def print_summary(results: list[dict[str, object]], n_samples: int) -> None:
     print("-------------------------------------------------")
     print(
         "Scenario          NORMAL  RECONFIG  SUN_SAFE  SAFE   "
-        "Full att.   Mean err   P95 err"
+        "Full att.   Mean err   P95 err   Unsafe >10deg"
     )
     print(
         "                    [%]      [%]       [%]     [%]      "
-        "[%]       [deg]      [deg]"
+        "[%]       [deg]      [deg]          [%]"
     )
 
     for result in results:
@@ -135,7 +140,8 @@ def print_summary(results: list[dict[str, object]], n_samples: int) -> None:
             f"{100*modes['SAFE']/n_samples:5.1f}  "
             f"{100*float(result['full_attitude_fraction']):8.1f}  "
             f"{float(result['mean_full_attitude_error']):9.3f}  "
-            f"{float(result['p95_full_attitude_error']):8.3f}"
+            f"{float(result['p95_full_attitude_error']):8.3f}      "
+            f"{100*float(result['unsafe_full_attitude_fraction']):8.2f}"
         )
 
 
