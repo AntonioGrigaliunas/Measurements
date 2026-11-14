@@ -20,7 +20,7 @@ from automatic_reconfiguration_analysis import (
 from final_system_analysis import run_sequence
 
 
-OUTPUT_DIR = Path("report") / "figures"
+OUTPUT_DIR = Path("figures")
 
 
 def save_automatic_reconfiguration_comparison() -> None:
