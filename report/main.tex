@@ -1,0 +1,135 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[margin=2.5cm]{geometry}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{siunitx}
+\usepackage{hyperref}
+
+\title{Intelligent Multi-Sensor Attitude Determination and Reliability Assessment for a CubeSat}
+\author{Antonio Grigaliunas}
+\date{}
+
+\begin{document}
+
+\maketitle
+
+\section{Sensor Model and Parameter Selection}
+
+The simulated attitude-determination system combines a six-face coarse Sun-sensor array with a three-axis magnetometer. The Sun sensors provide a measured Sun direction in the CubeSat body frame, while the magnetometer provides an independent magnetic-field direction. These two non-parallel reference vectors are combined using the TRIAD algorithm to estimate the spacecraft attitude.
+
+The Sun-sensor model assumes an ideal cosine response,
+\begin{equation}
+    I_i = \max\left(0,\mathbf{n}_i^\mathsf{T}\mathbf{s}\right),
+\end{equation}
+with additional gain, offset, and Gaussian measurement errors. A six-face cosine-sensor arrangement is representative of a coarse CubeSat Sun-sensing architecture. NASA's 2024 Small Spacecraft Technology State-of-the-Art report lists the Space Micro CSS-01/CSS-02 as cosine Sun sensors with a \SI{120}{\degree} full-cone field of view and approximately \SI{5}{\degree} accuracy (3$\sigma$) \cite{nasa2024soa}. Using a local linearization of the cosine response near \SI{45}{\degree} incidence, this corresponds to an approximate normalized 1$\sigma$ output uncertainty of
+\begin{equation}
+    \sigma_I
+    \approx
+    \sin(45^\circ)
+    \left(
+        \frac{5^\circ}{3}\frac{\pi}{180^\circ}
+    \right)
+    \approx 0.0206,
+\end{equation}
+therefore a baseline normalized Sun-sensor noise standard deviation of $0.02$ is used.
+
+The magnetometer model is based on a PNI RM3100-class device. Published nanosatellite work reports a worst-axis noise level of \SI{17}{\nano\tesla}, bias of \SI{440}{\nano\tesla}, and scale-factor error of 4885 ppm for the RM3100 \cite{colagrossi2023hermes}. The Earth's surface magnetic-field intensity is approximately \SIrange{25}{65}{\micro\tesla} \cite{noaaGeomagFAQ}; a representative value of \SI{50}{\micro\tesla} is therefore used to normalize the magnetic-field vector.
+
+Table~\ref{tab:sensor-parameters} summarizes the values used in the simulation and distinguishes sourced parameters from derived quantities and deliberate modelling assumptions.
+
+\begin{table}[htbp]
+\centering
+\caption{Sensor and environment parameters used in the simulation.}
+\label{tab:sensor-parameters}
+\small
+\begin{tabularx}{\textwidth}{@{}p{3.1cm}p{3.7cm}p{3.1cm}X@{}}
+\toprule
+\textbf{Subsystem} & \textbf{Parameter} & \textbf{Value} & \textbf{Basis} \\
+\midrule
+
+Sun sensor
+& Architecture
+& 6 cosine sensors, $\pm X,\pm Y,\pm Z$
+& Coarse six-face CubeSat arrangement; cosine response consistent with coarse Sun-sensor hardware \cite{nasa2024soa}. \\
+
+Sun sensor
+& Angular accuracy
+& \SI{5}{\degree} (3$\sigma$)
+& Literature value for Space Micro CSS-01/CSS-02 \cite{nasa2024soa}. \\
+
+Sun sensor
+& Normalized random-noise std.
+& 0.02
+& Derived from the \SI{5}{\degree} (3$\sigma$) accuracy using a cosine-response linearization near \SI{45}{\degree}. \\
+
+Sun sensor
+& Per-face gain factors
+& $[1.03,0.98,0.96,1.02,1.05,0.97]$
+& Deliberate residual calibration-mismatch assumption for sensitivity analysis; not a vendor specification. \\
+
+Sun sensor
+& Per-face offsets
+& $[0.010,0.005,0,0.008,0.012,0.004]$
+& Deliberate residual zero-bias assumption for sensitivity analysis; not a vendor specification. \\
+
+Magnetometer
+& Device basis
+& PNI RM3100 class
+& CubeSat/nanosatellite attitude-sensor architecture \cite{colagrossi2023hermes}. \\
+
+Magnetometer
+& Noise level
+& \SI{17}{\nano\tesla}
+& RM3100 worst-axis value \cite{colagrossi2023hermes}. \\
+
+Magnetometer
+& Bias
+& \SI{440}{\nano\tesla}
+& RM3100 worst-axis value \cite{colagrossi2023hermes}. \\
+
+Magnetometer
+& Scale-factor error
+& 4885 ppm
+& RM3100 worst-axis value \cite{colagrossi2023hermes}. \\
+
+Environment
+& Reference magnetic-field magnitude
+& \SI{50}{\micro\tesla}
+& Representative value within NOAA's approximate \SIrange{25}{65}{\micro\tesla} surface range \cite{noaaGeomagFAQ}. \\
+
+Magnetometer
+& Normalized noise std.
+& $3.4\times10^{-4}$
+& Derived as $17/50000$. \\
+
+Magnetometer
+& Normalized worst-axis bias
+& $8.8\times10^{-3}$
+& Derived as $440/50000$. \\
+
+Fault study
+& Magnetic-disturbance sweep
+& \SIrange{0}{7.5}{\micro\tesla}
+& Sensitivity sweep chosen to reach the scale of CubeSat spacecraft-generated magnetic interference reported above \SI{7.5}{\micro\tesla} peak-to-peak \cite{hoffmann2022spacecraftnoise}. \\
+
+Monte Carlo
+& Samples per case
+& 1000
+& Numerical convergence/coverage choice for the sensitivity and fault studies. \\
+
+\bottomrule
+\end{tabularx}
+\end{table}
+
+The distinction between intrinsic sensor noise and spacecraft-generated magnetic disturbance is important. The RM3100 intrinsic noise is small relative to the normalized Sun-sensor uncertainty, whereas onboard subsystems can produce much larger magnetic interference. Spacecraft-noise literature reports CubeSat magnetorquer-generated interference exceeding \SI{7500}{\nano\tesla} peak-to-peak \cite{hoffmann2022spacecraftnoise}. The magnetic-disturbance sweep is therefore treated as a separate fault study rather than as nominal magnetometer noise.
+
+\section{Future Refinement of the Sensor Model}
+
+The current parameterization is intended to support a controlled sensitivity study rather than reproduce one specific flight unit exactly. In particular, the Sun-sensor gain and offset vectors are engineering assumptions. A future hardware-specific model could replace these values with calibration coefficients from a selected coarse Sun sensor, include temperature dependence and field-of-view clipping, and use location- and orbit-dependent geomagnetic reference vectors rather than a single representative field magnitude.
+
+\bibliographystyle{ieeetr}
+\bibliography{references}
+
+\end{document}
