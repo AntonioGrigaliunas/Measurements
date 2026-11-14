@@ -435,29 +435,163 @@ For each Monte Carlo sample, a uniformly distributed random three-dimensional ro
 
 \subsection{Nominal Attitude-Estimation Accuracy}
 
-% TODO: Insert final Monte Carlo summary and attitude-error histogram.
-% Current physically based model gives approximately 2.3 deg mean
-% attitude error at Sun noise = 0.02 and nominal RM3100 noise.
+The nominal case uses the physically based sensor parameters described in Section~3.7, including a Sun-sensor noise standard deviation of 0.02 and the RM3100-class magnetometer noise level. Across 1000 uniformly distributed random spacecraft attitudes, the mean full-attitude error was
+\begin{equation}
+    \bar{\theta}_e = 2.318^\circ,
+\end{equation}
+with a standard deviation of \SI{1.183}{\degree}. The 95th-percentile error was \SI{4.516}{\degree}, while the maximum observed error was \SI{6.841}{\degree}. These values indicate that the proposed low-cost sensor combination provides coarse attitude knowledge with errors of only a few degrees under nominal conditions.
+
+The non-zero error obtained even when random measurement noise is set to zero is caused by the deliberately retained gain, offset, bias, and scale-factor mismatches in the sensor models. The simulation therefore represents an imperfect calibrated system rather than an ideal mathematical sensor pair.
+
+\IfFileExists{figures/attitude_error_histogram.png}{
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.72\textwidth]{figures/attitude_error_histogram.png}
+    \caption{Distribution of full-attitude error for the nominal sensor case over 1000 random attitudes.}
+    \label{fig:attitude-histogram}
+\end{figure}
+}{}
 
 \subsection{Sensor-Noise Sensitivity}
 
-% TODO: Insert attitude_error_vs_sensor_noise.png and explain that
-% Sun-sensor noise dominates the tested nominal RM3100 noise range.
+Table~\ref{tab:noise-sensitivity} shows the effect of Sun-sensor noise at the nominal RM3100 magnetometer-noise level. The mean attitude error increases from approximately \SI{1.57}{\degree} with no Sun-sensor random noise to approximately \SI{4.64}{\degree} when the Sun-sensor noise standard deviation is increased to 0.05.
+
+\begin{table}[H]
+\centering
+\caption{Full-attitude error versus Sun-sensor noise at the nominal RM3100 magnetometer-noise level.}
+\label{tab:noise-sensitivity}
+\small
+\begin{tabular}{@{}ccccc@{}}
+\toprule
+\textbf{Sun noise std.} &
+\textbf{Mean error [deg]} &
+\textbf{Std. [deg]} &
+\textbf{95th pct. [deg]} &
+\textbf{Max [deg]} \\
+\midrule
+0.000 & 1.572 & 0.765 & 2.887 & 3.276 \\
+0.005 & 1.624 & 0.798 & 3.005 & 4.217 \\
+0.010 & 1.784 & 0.881 & 3.360 & 5.037 \\
+0.020 & 2.318 & 1.183 & 4.516 & 6.841 \\
+0.050 & 4.641 & 2.524 & 9.271 & 14.159 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+In contrast, varying the magnetometer random noise from zero to several times the nominal RM3100 noise produced only small changes in the mean attitude error for a fixed Sun-sensor noise level. This shows that, within the physically realistic range tested, the nominal attitude accuracy is dominated by the coarse Sun-sensor uncertainty rather than by the intrinsic magnetometer noise.
+
+\IfFileExists{figures/attitude_error_vs_sensor_noise.png}{
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.78\textwidth]{figures/attitude_error_vs_sensor_noise.png}
+    \caption{Mean full-attitude error as a function of Sun-sensor and magnetometer random-noise levels.}
+    \label{fig:noise-sensitivity}
+\end{figure}
+}{}
 
 \subsection{Fault Analysis}
 
-% TODO: Insert fault_analysis_summary.png and summarize Healthy,
-% Sun sensor failed, Mag disturbance, and Combined fault cases.
+The fuzzy reliability system was then evaluated under nominal and faulted conditions. Table~\ref{tab:fault-results} compares the healthy system with a failed Sun sensor, a \SI{7.5}{\micro\tesla} magnetic disturbance, and the simultaneous occurrence of both faults.
+
+\begin{table}[H]
+\centering
+\caption{Attitude-estimation and fuzzy-reliability results for the principal fault scenarios.}
+\label{tab:fault-results}
+\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Scenario} &
+\textbf{Mean error [deg]} &
+\textbf{95th pct. [deg]} &
+\textbf{Mean reliability [\%]} &
+\textbf{Reliability $<40$\% [\%]} \\
+\midrule
+Healthy & 2.312 & 4.429 & 81.67 & 0.0 \\
+Sun sensor failed & 18.886 & 71.185 & 47.25 & 39.9 \\
+Magnetic disturbance & 5.416 & 9.176 & 39.57 & 60.6 \\
+Combined fault & 21.571 & 72.683 & 25.84 & 85.0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The healthy system maintains both low attitude error and high fuzzy reliability. A complete Sun-sensor failure produces the largest single-sensor degradation, increasing the mean attitude error to approximately \SI{18.9}{\degree}. The magnetic disturbance causes a smaller mean attitude error of approximately \SI{5.4}{\degree}, but the fuzzy system identifies the abnormal magnetic measurement more consistently, giving a mean reliability below 40\%. When both faults are present, the mean attitude error rises above \SI{21}{\degree} and 85\% of the cases are classified below 40\% reliability.
+
+The six individual Sun-sensor failures produced similar averaged results because the sensor geometry and attitude sampling are approximately symmetric. This supports the interpretation that the all-face comparison is primarily a consistency check rather than evidence that one CubeSat face is intrinsically more critical than another.
+
+\IfFileExists{figures/fault_analysis_summary.png}{
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.80\textwidth]{figures/fault_analysis_summary.png}
+    \caption{Effect of healthy and faulted sensor scenarios on mean attitude error and fuzzy reliability.}
+    \label{fig:fault-summary}
+\end{figure}
+}{}
 
 \subsection{Fuzzy Reliability Validation}
 
-% TODO: Insert fuzzy_reliability_validation.png and discuss the inverse
-% relationship between true attitude error and estimated reliability.
+The reliability score is intended to provide an onboard indication of measurement quality without using the true attitude error, which is available only inside the simulation. Its usefulness can therefore be evaluated by comparing the fuzzy score with the independently calculated simulation error.
+
+The results show the expected inverse trend: cases with small attitude error are concentrated at high reliability, while large-error fault cases move toward lower reliability scores. The mean reliability decreases from 81.67\% in the healthy case to 47.25\% for a failed Sun sensor, 39.57\% under magnetic disturbance, and 25.84\% for the combined fault. This demonstrates that the fuzzy indicators contain useful information about the quality of the attitude solution.
+
+The separation is not perfect. In particular, the mean score for a failed Sun sensor remains within the \emph{Medium} reliability range, and some high-error samples are not classified as very low reliability. This is an important limitation rather than a numerical error: the four selected quality indicators do not uniquely determine the true attitude error. The fuzzy system should therefore be interpreted as a confidence indicator rather than as an exact predictor of angular error.
+
+The five-level output formulation reduces the strong three-band quantization observed with an earlier Low/Medium/High formulation, although horizontal clustering remains because the weighted-sum method still uses discrete representative output values. This motivates centroid defuzzification with continuous output membership functions as a possible future improvement.
+
+\IfFileExists{figures/fuzzy_reliability_validation.png}{
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.80\textwidth]{figures/fuzzy_reliability_validation.png}
+    \caption{Fuzzy reliability score compared with the true simulation attitude error for healthy and faulted cases.}
+    \label{fig:fuzzy-validation}
+\end{figure}
+}{}
 
 \subsection{Magnetic-Disturbance Sweep}
 
-% TODO: Insert magnetometer_disturbance_sweep.png and
-% magnetometer_fault_detection.png, with physical disturbance units in uT.
+A systematic magnetic-disturbance sweep was performed to evaluate the transition from nominal operation to an increasingly corrupted magnetometer measurement. The disturbance direction was kept fixed while its magnitude was increased from 0 to \SI{7.5}{\micro\tesla}. The results are shown in Table~\ref{tab:mag-sweep}.
+
+\begin{table}[H]
+\centering
+\caption{Effect of magnetic-disturbance magnitude on attitude error and fuzzy reliability.}
+\label{tab:mag-sweep}
+\small
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+\textbf{Disturbance [$\mu$T]} &
+\textbf{Mean error [deg]} &
+\textbf{95th pct. [deg]} &
+\textbf{Mean reliability [\%]} &
+\textbf{Reliability $<40$\% [\%]} \\
+\midrule
+0.00 & 2.312 & 4.429 & 81.67 & 0.0 \\
+1.25 & 2.560 & 4.507 & 77.53 & 0.1 \\
+2.50 & 2.992 & 4.845 & 67.69 & 2.2 \\
+3.75 & 3.526 & 5.542 & 59.97 & 7.4 \\
+5.00 & 4.121 & 6.661 & 53.14 & 19.0 \\
+7.50 & 5.416 & 9.176 & 39.57 & 60.6 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The trend is monotonic over the tested range: increasing magnetic disturbance increases the attitude error while decreasing the fuzzy reliability score. From 0 to \SI{7.5}{\micro\tesla}, the mean attitude error increases from \SI{2.31}{\degree} to \SI{5.42}{\degree}, while the mean reliability falls from 81.67\% to 39.57\%. At the maximum disturbance, 60.6\% of the simulations are classified below 40\% reliability. This provides direct evidence that the fuzzy layer responds progressively to worsening magnetometer corruption rather than only reacting after a complete sensor failure.
+
+\IfFileExists{figures/magnetometer_disturbance_sweep.png}{
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.80\textwidth]{figures/magnetometer_disturbance_sweep.png}
+    \caption{Attitude error and fuzzy reliability as functions of magnetic-disturbance magnitude.}
+    \label{fig:mag-sweep}
+\end{figure}
+}{}
+
+\IfFileExists{figures/magnetometer_fault_detection.png}{
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{figures/magnetometer_fault_detection.png}
+    \caption{Percentage of cases classified below 40\% reliability as magnetic disturbance increases.}
+    \label{fig:mag-detection}
+\end{figure}
+}{}
 
 \section{Conclusion and Future Works}
 
