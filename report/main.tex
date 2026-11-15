@@ -44,6 +44,8 @@ The proposed system therefore addresses three user needs:
 
 The project is sensor-centric because the autonomy of the proposed system is created directly from measurement geometry, sensor consistency checks, fault memory, adaptive use of the available sensor channels, and fuzzy interpretation of measurement quality.
 
+\clearpage
+
 \section{Literature Survey}
 
 \subsection{CubeSat Attitude Determination}
@@ -88,6 +90,8 @@ The present project retains this interpretable fuzzy confidence layer, but uses 
 Fault-tolerant attitude determination extends sensor fusion by deciding how the estimator should respond when its inputs are no longer trustworthy. Colagrossi and Lavagna proposed a fault-tolerant attitude and orbit determination architecture for small satellites with embedded failure detection and isolation, autonomous management of redundant measurements, reconfiguration of the estimation functions, and transitions to compatible safe modes when the nominal solution cannot be maintained \cite{colagrossi2022faulttolerant}. Their architecture explicitly includes sensor exclusion after confirmed failures and a transition from full attitude determination to Sun-direction estimation when the available measurements are insufficient for a trustworthy full solution.
 
 This failure-detection--isolation--recovery philosophy motivates the architecture developed in this project, but the implementation is deliberately simpler and focused on the sensing concepts taught in MA4822. Instead of relying on redundant high-performance attitude sensors or a dynamic Kalman-filter architecture, the proposed method exploits the geometry of six coarse Sun sensors, the unit-length constraint of the Sun vector, consistency with the magnetic reference vector, short-term fault memory, and a dedicated magnetic-health gate. The contribution of the project is therefore a lightweight sensor-level demonstration of self-reconfiguration and graceful degradation using a low-cost CubeSat sensing architecture, with fuzzy logic retained as an interpretable confidence output rather than as the sole fault detector.
+
+\clearpage
 
 \section{Description of Proposed Solution}
 
@@ -367,6 +371,8 @@ Monte Carlo samples per static case & 1000 & Simulation-design choice. \\
 \end{tabularx}
 \end{table}
 
+\clearpage
+
 \section{Implementation}
 
 The complete system is implemented in Python using NumPy for numerical operations and Matplotlib for validation figures. The software is divided into sensor models, attitude estimation, Sun-sensor fault isolation, autonomous mode management, fuzzy confidence assessment, and validation scripts. The implementation is evaluated using two complementary simulation procedures.
@@ -388,6 +394,8 @@ A second, time-ordered validation is used for persistent fault memory and mode s
 Four final temporal scenarios are compared: healthy operation, a persistent $+X$ Sun-sensor failure, a \SI{7.5}{\micro\tesla} magnetic disturbance, and the simultaneous occurrence of both faults. The main metrics are operating-mode fractions, full-attitude availability, mean and 95th-percentile attitude error, unsafe full-attitude outputs above $10^\circ$, and mean fuzzy confidence.
 
 The estimator parameters and decision thresholds are frozen before generating the final figures. The reported results therefore validate one fixed architecture rather than continuing to tune the algorithm against the final test outcomes.
+
+\clearpage
 
 \section{Results}
 
@@ -500,6 +508,8 @@ The mean confidence follows the expected ordering: 80.70\% in the healthy case, 
 
 The final results show that the main benefit of the proposed architecture is not merely a lower average error. The system changes its behaviour according to measurement quality: it recovers most of the lost performance after a Sun-sensor failure, remembers confirmed failures over time, and deliberately degrades to Sun-only sensing when the magnetic reference becomes unreliable.
 
+\clearpage
+
 \section{Conclusion and Future Works}
 
 This project developed a reliability-aware, self-reconfiguring attitude-determination architecture for a CubeSat using six coarse Sun sensors and one three-axis magnetometer. The baseline TRIAD solution was extended with automatic Sun-sensor fault detection, fault-tolerant Sun-vector reconstruction, rolling persistent fault memory, a dedicated magnetometer health gate, autonomous operating modes, and a fuzzy confidence output.
@@ -509,6 +519,8 @@ The final simulation demonstrates that the autonomy logic preserves nominal perf
 The project is a simulation-level demonstration rather than a flight-ready ADCS. Future work should therefore focus on laboratory validation using physical coarse Sun sensors and a magnetometer, measured calibration data, orbit-dependent Sun ephemerides and geomagnetic-field models, eclipse handling, and validation against a wider set of magnetic-disturbance directions and time histories. The hard-fault model should also be extended beyond a zero-output failure to include stuck-at values, gradual bias drift, intermittent faults, and multiple simultaneous Sun-sensor failures. A gyroscope could subsequently be added to propagate attitude during periods in which only one absolute reference vector is trustworthy.
 
 The central result is that low-cost sensing can be made more useful by coupling attitude estimation with explicit measurement-health reasoning. Rather than always returning an attitude, the proposed system can detect, remember, reconfigure, and deliberately degrade its output according to the information that remains trustworthy.
+
+\clearpage
 
 \bibliographystyle{ieeetr}
 \bibliography{references}
