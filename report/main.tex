@@ -10,7 +10,6 @@
 \usepackage{float}
 \usepackage[hidelinks]{hyperref}
 \usepackage{xcolor}
-\usepackage{tikz}
 \definecolor{ntuNavy}{RGB}{28,44,96}
 
 \hypersetup{
@@ -24,65 +23,50 @@
     \thispagestyle{empty}
     \centering
 
-    \vspace*{1.55cm}
+    \vspace*{1.15cm}
 
-    {\large \textsc{Nanyang Technological University}\\[0.28cm]}
-    {\large School of Mechanical and Aerospace Engineering\\[0.18cm]}
-    {\large MA4822 -- Measurement and Sensing Systems}
+    \includegraphics[width=0.50\textwidth]{figures/ntu_logo_title.jpg}
 
-    \vspace{1.85cm}
+    \vspace{1.25cm}
 
-    \rule{0.88\textwidth}{0.6pt}\\[0.65cm]
+    {\large MA4822 -- Measurement and Sensing Systems\par}
+
+    \vspace{1.15cm}
+
+    \rule{0.78\textwidth}{0.6pt}\par
+
+    \vspace{0.85cm}
 
     {\Huge\bfseries
-    Multi-Sensor Integration for\\[0.20cm]
-    Fault-Tolerant CubeSat\\[0.20cm]
-    Attitude Determination
-    }
+    Multi-Sensor Integration for\par}
+    \vspace{0.20cm}
+    {\Huge\bfseries
+    Fault-Tolerant CubeSat\par}
+    \vspace{0.20cm}
+    {\Huge\bfseries
+    Attitude Determination\par}
 
-    \vspace{0.65cm}
-    \rule{0.88\textwidth}{0.6pt}
+    \vspace{0.85cm}
 
-    \vspace{0.90cm}
+    \rule{0.78\textwidth}{0.6pt}\par
 
-    {\Large Individual Project Report}
+    \vspace{1.0cm}
 
-    \vspace{0.75cm}
-
-    % Minimalist CubeSat / orbit cover art
-    \begin{tikzpicture}[x=1cm,y=1cm,line cap=round,line join=round]
-        \draw[ntuNavy, line width=0.55pt] (-3.4,0) ellipse (3.4 and 0.82);
-        \draw[ntuNavy!45, line width=0.45pt, dashed] (-2.9,-0.18) arc[start angle=195,end angle=345,x radius=3.0,y radius=1.05];
-
-        % CubeSat body
-        \draw[ntuNavy, line width=0.75pt] (-0.38,-0.38) rectangle (0.38,0.38);
-        \draw[ntuNavy, line width=0.55pt] (-0.27,-0.27) rectangle (0.27,0.27);
-
-        % Solar panels
-        \draw[ntuNavy, line width=0.65pt] (-1.34,-0.28) rectangle (-0.38,0.28);
-        \draw[ntuNavy, line width=0.65pt] (0.38,-0.28) rectangle (1.34,0.28);
-        \foreach \x in {-1.10,-0.86,-0.62,0.62,0.86,1.10} {
-            \draw[ntuNavy!60, line width=0.35pt] (\x,-0.28) -- (\x,0.28);
-        }
-        \draw[ntuNavy!60, line width=0.35pt] (-1.34,0) -- (-0.38,0);
-        \draw[ntuNavy!60, line width=0.35pt] (0.38,0) -- (1.34,0);
-
-        % Small attitude vectors
-        \draw[ntuNavy, ->, line width=0.55pt] (0.38,0.38) -- (0.95,0.83);
-        \draw[ntuNavy, ->, line width=0.55pt] (0.38,0.38) -- (1.08,0.38);
-        \draw[ntuNavy, ->, line width=0.55pt] (0.38,0.38) -- (0.38,1.02);
-    \end{tikzpicture}
+    {\Large\itshape Final Report\par}
 
     \vfill
 
-    \begin{tabular}{rl}
-        \textbf{Author:} & Antonio Grigaliunas \\[0.25cm]
-        \textbf{Student Number:} & N2602301C \\[0.25cm]
-        \textbf{Institution:} & Nanyang Technological University \\[0.25cm]
-        \textbf{Date:} & November 2026
-    \end{tabular}
+    {\Large Antonio Grigaliunas\par}
+    \vspace{0.35cm}
+    {\large Student Number: N2602301C\par}
 
-    \vspace*{1.0cm}
+    \vspace{1.25cm}
+
+    {\large Nanyang Technological University\par}
+    \vspace{0.25cm}
+    {\large November 2026\par}
+
+    \vspace*{0.65cm}
 \end{titlepage}
 
 \tableofcontents
