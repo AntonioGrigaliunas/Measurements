@@ -1,4 +1,4 @@
-"""Compare automatic and known-fault reconfiguration."""
+"""compare automatic and known-fault reconfiguration"""
 
 from __future__ import annotations
 
@@ -68,7 +68,7 @@ def healthy_false_alarm_rate(
     n_samples: int = 5000,
     seed: int = 123,
 ) -> float:
-    """Return fraction of healthy snapshots incorrectly flagged as failed."""
+    """return fraction of healthy snapshots incorrectly flagged as failed"""
     rng = np.random.default_rng(seed)
     sun_reference = unit_vector(np.array([1.0, 0.4, 0.2]))
     magnetic_reference = unit_vector(np.array([0.2, -0.3, 0.9]))
@@ -110,7 +110,7 @@ def run_failed_sensor_case(
     n_samples: int = 1000,
     seed: int = 42,
 ) -> dict[str, float | str]:
-    """Evaluate one failed face with standard, automatic, and oracle modes."""
+    """evaluate one failed face with standard, automatic, and oracle modes"""
     rng = np.random.default_rng(seed)
 
     sun_reference = unit_vector(np.array([1.0, 0.4, 0.2]))
