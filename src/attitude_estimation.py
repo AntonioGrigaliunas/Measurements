@@ -73,7 +73,7 @@ def estimate_sun_vector_reconfigured(
 
     corrected = np.maximum(0.0, (readings - offsets) / gains)
 
-    # check the expected face order
+    # expected face order
     expected_normals = np.array(
         [
             [1.0, 0.0, 0.0],
@@ -194,7 +194,7 @@ def triad_attitude(
     reference_triad = np.column_stack((t1_r, t2_r, t3_r))
     body_triad = np.column_stack((t1_b, t2_b, t3_b))
 
-    # reference frame to body frame
+    # reference to body frame
     return body_triad @ reference_triad.T
 
 
