@@ -1,16 +1,4 @@
-"""Final integrated benchmark for the self-aware CubeSat attitude system.
-
-This script validates the final architecture:
-- automatic Sun-sensor fault detection;
-- two-hit persistent Sun-fault memory;
-- adaptive Sun-vector reconstruction;
-- magnetometer health gating;
-- NORMAL / RECONFIGURED / SUN_SAFE / SAFE operating modes;
-- fuzzy confidence output.
-
-A smooth changing attitude is used so the same persistent fault is observed
-across many different illumination geometries.
-"""
+"""Run the final integrated system benchmark."""
 
 from __future__ import annotations
 
@@ -160,7 +148,7 @@ def run_sequence(
             if error > 10.0:
                 unsafe_outputs += 1
 
-        # Direct stateless comparison for the persistent Sun-fault case.
+        # Stateless comparison for the persistent Sun fault.
         if sun_fault_active and not magnetic_fault:
             stateless = autonomous_attitude_solution(
                 sun_array.sensor_normals,
