@@ -148,7 +148,7 @@ def run_sequence(
             if error > 10.0:
                 unsafe_outputs += 1
 
-        # stateless comparison for the persistent Sun fault
+        # stateless case for persistent sun fault
         if sun_fault_active and not magnetic_fault:
             stateless = autonomous_attitude_solution(
                 sun_array.sensor_normals,
