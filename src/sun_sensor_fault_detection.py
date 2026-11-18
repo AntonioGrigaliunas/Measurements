@@ -33,9 +33,9 @@ def detect_failed_sun_sensor(
     offsets = np.asarray(offsets, dtype=float)
 
     if readings.shape != (6,):
-        raise ValueError("readings must contain 6 Sun-sensor values.")
+        raise ValueError("readings must contain 6 Sun-sensor values")
     if gains.shape != (6,) or offsets.shape != (6,):
-        raise ValueError("gains and offsets must each contain 6 values.")
+        raise ValueError("gains and offsets must each contain 6 values")
 
     corrected = np.maximum(0.0, (readings - offsets) / gains)
     signed_components = np.array(
