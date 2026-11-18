@@ -1,14 +1,4 @@
-"""Simple Sun-sensor model for the MA4822 CubeSat project.
-
-The model assumes each light sensor follows an ideal cosine response:
-    measurement = max(0, n_i dot s)
-
-where n_i is the outward unit normal of sensor i and s is the unit Sun vector
-expressed in the CubeSat body frame.
-
-Gain, offset, and Gaussian noise terms are included so that the project can
-study calibration errors and measurement uncertainty.
-"""
+"""Simple cosine-response Sun-sensor model."""
 
 from __future__ import annotations
 
@@ -73,35 +63,25 @@ class SunSensorArray:
         noise_std: float = 0.0,
         rng: np.random.Generator | None = None,
     ) -> np.ndarray:
-        """Return the simulated reading of every sensor.
-
-        Parameters
-        ----------
-        sun_vector:
-            Sun direction in the CubeSat body frame.
-        noise_std:
-            Standard deviation of additive Gaussian measurement noise.
-        rng:
-            Optional NumPy random generator for reproducible simulations.
-        """
+        """Return the simulated reading of every sensor."""
         if noise_std < 0:
             raise ValueError("noise_std must be non-negative.")
 
         sun_vector = unit_vector(sun_vector)
 
-        # Ideal cosine response. Sensors facing away from the Sun read zero.
+        # Ideal cosine response.
         ideal_response = np.maximum(0.0, self.sensor_normals @ sun_vector)
 
-        # Static calibration mismatch.
+        # Gain and offset mismatch.
         readings = self.gains * ideal_response + self.offsets
 
-        # Random measurement noise.
+        # Measurement noise.
         if noise_std > 0:
             if rng is None:
                 rng = np.random.default_rng()
             readings = readings + rng.normal(0.0, noise_std, self.n_sensors)
 
-        # A light sensor cannot produce a physically meaningful negative signal.
+        # Clamp negative readings to zero.
         return np.maximum(0.0, readings)
 
 
