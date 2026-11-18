@@ -1,4 +1,4 @@
-"""Attitude estimation helpers."""
+"""attitude estimation helpers"""
 
 from __future__ import annotations
 
@@ -11,7 +11,7 @@ def estimate_sun_vector(
     sensor_normals: np.ndarray,
     readings: np.ndarray,
 ) -> np.ndarray:
-    """Estimate the Sun direction from the Sun-sensor measurements."""
+    """estimate the Sun direction from the Sun-sensor measurements"""
     sensor_normals = np.asarray(sensor_normals, dtype=float)
     readings = np.asarray(readings, dtype=float)
 
@@ -44,7 +44,7 @@ def estimate_sun_vector_reconfigured(
     offsets: np.ndarray | None = None,
     dark_threshold: float = 0.08,
 ) -> np.ndarray:
-    """Estimate the Sun direction after a known Sun-sensor channel failure."""
+    """estimate the Sun direction after a known Sun-sensor channel failure"""
     sensor_normals = np.asarray(sensor_normals, dtype=float)
     readings = np.asarray(readings, dtype=float)
     healthy_mask = np.asarray(healthy_mask, dtype=bool)
@@ -73,7 +73,7 @@ def estimate_sun_vector_reconfigured(
 
     corrected = np.maximum(0.0, (readings - offsets) / gains)
 
-    # Check the expected face order.
+    # check the expected face order
     expected_normals = np.array(
         [
             [1.0, 0.0, 0.0],
@@ -105,8 +105,8 @@ def estimate_sun_vector_reconfigured(
             continue
 
         if positive_healthy and not negative_healthy:
-            # If +axis is illuminated, its reading directly gives the signed
-            # component. Otherwise the failed -axis face is assumed sunward.
+            # if +axis is illuminated, its reading directly gives the signed
+            # component. Otherwise the failed -axis face is assumed sunward
             if corrected[positive_index] > dark_threshold:
                 components[axis] = corrected[positive_index]
             else:
@@ -133,9 +133,9 @@ def estimate_sun_vector_reconfigured(
         known_axes = [index for index in range(3) if index != axis]
         known_squared = float(np.sum(components[known_axes] ** 2))
 
-        # With noisy measurements the known components can occasionally imply
+        # with noisy measurements the known components can occasionally imply
         # a magnitude slightly above one. In that case, leave the missing
-        # component at zero and normalize the measured components.
+        # component at zero and normalize the measured components
         missing_magnitude = np.sqrt(max(0.0, 1.0 - known_squared))
         components[axis] = sign * missing_magnitude
 
@@ -149,7 +149,7 @@ def angular_error_degrees(
     true_vector: np.ndarray,
     estimated_vector: np.ndarray,
 ) -> float:
-    """Return the angle between two vectors in degrees."""
+    """return the angle between two vectors in degrees"""
     true_vector = unit_vector(true_vector)
     estimated_vector = unit_vector(estimated_vector)
 
@@ -168,7 +168,7 @@ def triad_attitude(
     sun_body: np.ndarray,
     magnetic_body: np.ndarray,
 ) -> np.ndarray:
-    """Estimate the body-from-reference rotation matrix using TRIAD."""
+    """estimate the body-from-reference rotation matrix using TRIAD"""
     s_r = unit_vector(sun_reference)
     m_r = unit_vector(magnetic_reference)
     s_b = unit_vector(sun_body)
@@ -194,7 +194,7 @@ def triad_attitude(
     reference_triad = np.column_stack((t1_r, t2_r, t3_r))
     body_triad = np.column_stack((t1_b, t2_b, t3_b))
 
-    # Reference frame to body frame.
+    # reference frame to body frame
     return body_triad @ reference_triad.T
 
 
@@ -202,7 +202,7 @@ def attitude_error_degrees(
     true_rotation: np.ndarray,
     estimated_rotation: np.ndarray,
 ) -> float:
-    """Return the principal rotation-angle error between two attitudes."""
+    """return the principal rotation-angle error between two attitudes"""
     true_rotation = np.asarray(true_rotation, dtype=float)
     estimated_rotation = np.asarray(estimated_rotation, dtype=float)
 
@@ -224,7 +224,7 @@ def rotation_matrix_from_euler(
     pitch_deg: float,
     yaw_deg: float,
 ) -> np.ndarray:
-    """Create a body-from-reference rotation matrix from XYZ attitude angles."""
+    """create a body-from-reference rotation matrix from XYZ attitude angles"""
     roll = np.radians(roll_deg)
     pitch = np.radians(pitch_deg)
     yaw = np.radians(yaw_deg)
