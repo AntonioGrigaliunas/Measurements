@@ -1,4 +1,4 @@
-"""Generate the final report figures."""
+"""generate the final report figures"""
 
 from __future__ import annotations
 
@@ -22,7 +22,7 @@ OUTPUT_DIR = Path("figures")
 
 
 def save_noise_sensitivity() -> None:
-    """Plot baseline attitude sensitivity to both sensor-noise sources."""
+    """plot baseline attitude sensitivity to both sensor-noise sources"""
     results = run_attitude_noise_sensitivity()
 
     sun_levels = sorted({key[0] for key in results})
@@ -99,7 +99,7 @@ def save_noise_sensitivity() -> None:
 
 
 def save_automatic_reconfiguration_comparison() -> None:
-    """Compare baseline, automatic, and perfect-known-fault reconstruction."""
+    """compare baseline, automatic, and perfect-known-fault reconstruction"""
     results = [
         run_failed_sensor_case(index)
         for index in range(len(SUN_SENSOR_NAMES))
@@ -139,7 +139,7 @@ def save_automatic_reconfiguration_comparison() -> None:
 
 
 def final_sequences() -> list[dict[str, object]]:
-    """Run the four frozen final-system scenarios."""
+    """run the four frozen final-system scenarios"""
     return [
         run_sequence("Healthy"),
         run_sequence("Sun fault", failed_sun_sensor=0),
@@ -153,7 +153,7 @@ def final_sequences() -> list[dict[str, object]]:
 
 
 def save_post_fault_modes(results: list[dict[str, object]]) -> None:
-    """Plot post-fault operating-mode selection as 100% stacked bars."""
+    """plot post-fault operating-mode selection as 100% stacked bars"""
     names = [str(result["name"]) for result in results]
     mode_names = ["NORMAL", "RECONFIGURED", "SUN_SAFE", "SAFE"]
 
@@ -195,7 +195,7 @@ def save_post_fault_modes(results: list[dict[str, object]]) -> None:
 
 
 def save_post_fault_reliability(results: list[dict[str, object]]) -> None:
-    """Plot mean fuzzy confidence after fault injection."""
+    """plot mean fuzzy confidence after fault injection"""
     names = [str(result["name"]) for result in results]
     reliability = [
         float(result["post_fault_mean_reliability"])
@@ -230,7 +230,7 @@ def save_post_fault_reliability(results: list[dict[str, object]]) -> None:
 def save_persistent_memory_comparison(
     results: list[dict[str, object]],
 ) -> None:
-    """Show how temporal fault memory reduces unsafe Sun-fault outputs."""
+    """show how temporal fault memory reduces unsafe Sun-fault outputs"""
     sun_result = next(
         result for result in results
         if result["name"] == "Sun fault"
