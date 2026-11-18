@@ -321,7 +321,7 @@ def main() -> None:
         "\nNote: Observable detect is conditioned on the failed face having "
         f"ideal signal >= {DEFAULT_MIN_MISSING_COMPONENT:.2f}. A failed dark "
         "face cannot be identified from one static measurement because zero "
-        "is also its expected healthy output."
+        "is also its expected healthy output"
     )
 
     output_dir = Path("results") / "figures"
