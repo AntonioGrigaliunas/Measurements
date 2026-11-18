@@ -284,9 +284,9 @@ class AutonomousAttitudeManager:
         offsets: np.ndarray = SUN_OFFSETS,
     ) -> None:
         if confirmations_required < 1:
-            raise ValueError("confirmations_required must be at least 1.")
+            raise ValueError("confirmations_required must be at least 1")
         if confirmation_window < 1:
-            raise ValueError("confirmation_window must be at least 1.")
+            raise ValueError("confirmation_window must be at least 1")
 
         self.confirmations_required = int(confirmations_required)
         self.confirmation_window = int(confirmation_window)
