@@ -1,15 +1,4 @@
-"""Compare standard and self-reconfigured Sun-sensor attitude estimation.
-
-Stage 1 of the self-reconfiguring CubeSat project:
-- the failed Sun-sensor channel is assumed to be known from a channel-status
-  diagnostic;
-- the standard estimator still uses the corrupted six-channel vector;
-- the reconfigured estimator excludes the failed channel and reconstructs the
-  missing Sun-vector component when possible.
-
-The next project stage will replace the known failure flag with automatic
-per-sensor fault detection.
-"""
+"""Compare standard and reconfigured Sun-sensor estimation."""
 
 from __future__ import annotations
 
