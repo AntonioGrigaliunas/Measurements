@@ -1,13 +1,4 @@
-"""Fuzzy reliability assessment for the MA4822 CubeSat project.
-
-The structure follows the course approach:
-1. Crisp sensor-quality indicators -> fuzzy beliefs.
-2. IF-THEN fuzzy rules -> fuzzy reliability decisions.
-3. Weighted-sum defuzzification -> crisp reliability score.
-
-Five output levels are used to reduce the coarse banding produced by a
-three-level Low/Medium/High output.
-"""
+"""Fuzzy reliability scoring."""
 
 from __future__ import annotations
 
@@ -100,7 +91,7 @@ def fuzzy_reliability_score(
     m = beliefs["magnetic"]
     s = beliefs["sun_residual"]
 
-    # AND is implemented with MIN and OR with MAX, following the MA4822 method.
+    # MIN for AND, MAX for OR.
 
     very_high_rules = [
         min(h["good"], c["good"], m["good"], s["good"]),
@@ -153,7 +144,7 @@ def fuzzy_reliability_score(
         "very_high": max(very_high_rules),
     }
 
-    # Five representative crisp output values for weighted-sum defuzzification.
+    # Crisp output values for defuzzification.
     output_values = {
         "very_low": 10.0,
         "low": 30.0,
