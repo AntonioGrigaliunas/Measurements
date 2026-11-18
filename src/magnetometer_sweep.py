@@ -1,4 +1,4 @@
-"""Systematic magnetometer-disturbance sweep for the MA4822 CubeSat project."""
+"""Magnetometer disturbance sweep."""
 
 from __future__ import annotations
 
