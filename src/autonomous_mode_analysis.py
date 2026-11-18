@@ -215,7 +215,7 @@ def main() -> None:
         "\nInterpretation: full 3D attitude is intentionally withheld in "
         "SUN_SAFE mode. The system still returns the Sun direction for "
         "survival/power-pointing functions instead of trusting a corrupted "
-        "magnetometer."
+        "magnetometer"
     )
 
     output_dir = Path("results") / "figures"
