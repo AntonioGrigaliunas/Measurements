@@ -1,4 +1,4 @@
-"""Monte Carlo full-attitude sensitivity study for the MA4822 CubeSat project."""
+"""Monte Carlo attitude-sensitivity study."""
 
 from __future__ import annotations
 
