@@ -1,4 +1,4 @@
-"""Fault analysis with fuzzy reliability assessment for the MA4822 project."""
+"""Fault analysis and reliability checks."""
 
 from __future__ import annotations
 
@@ -416,8 +416,7 @@ def main() -> None:
     n_samples = 1000
     base_seed = 42
 
-    # Keep the same random attitude/noise sequence for these baseline scenarios
-    # so the fault comparisons are fair.
+    # Reuse the same random sequence for a fair comparison.
     results = [
         run_scenario(
             "Healthy",
