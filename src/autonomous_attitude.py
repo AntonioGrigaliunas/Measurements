@@ -1,22 +1,4 @@
-"""Autonomous self-reconfiguring CubeSat attitude-determination logic.
-
-Operating modes
----------------
-NORMAL
-    Sun array and magnetometer are accepted; full TRIAD attitude is available.
-RECONFIGURED
-    One Sun-sensor failure is detected or remembered and the Sun vector is
-    reconstructed using the remaining channels; full TRIAD attitude remains
-    available.
-SUN_SAFE
-    A usable Sun direction is available, but the magnetometer fails the
-    magnetic-health checks. Full 3D attitude is intentionally withheld.
-SAFE
-    A trustworthy Sun direction cannot be produced.
-
-The hard-fault logic protects and reconfigures the estimator. The fuzzy layer
-has a separate job: it reports an interpretable confidence score.
-"""
+"""Autonomous attitude estimation and fault handling."""
 
 from __future__ import annotations
 
@@ -167,11 +149,7 @@ def autonomous_attitude_solution(
     offsets: np.ndarray = SUN_OFFSETS,
     remembered_failed_sun_sensor: int | None = None,
 ) -> dict[str, object]:
-    """Return one autonomous attitude solution.
-
-    remembered_failed_sun_sensor lets a stateful manager force continued
-    reconfiguration after a previously confirmed hard failure.
-    """
+    """Return one autonomous attitude solution."""
     detection = detect_failed_sun_sensor(
         sun_readings,
         magnetic_measurement,
@@ -296,16 +274,7 @@ def autonomous_attitude_solution(
 
 
 class AutonomousAttitudeManager:
-    """Stateful attitude manager with persistent Sun-sensor fault memory.
-
-    A current detector hit can trigger immediate reconfiguration for that
-    sample. Persistent memory is more conservative: the same sensor must be
-    detected several times within a rolling confirmation window. This prevents
-    rare isolated false alarms from accumulating indefinitely during long
-    missions.
-
-    Once a hard fault is latched, it remains latched until reset().
-    """
+    """Stateful attitude manager with persistent Sun-sensor fault memory."""
 
     def __init__(
         self,
@@ -334,7 +303,7 @@ class AutonomousAttitudeManager:
     def _update_fault_memory(self, detected_sensor: int | None) -> None:
         self._sample_index += 1
 
-        # Keep only recent evidence. Old isolated false alarms expire.
+        # Drop old detections.
         oldest_allowed = self._sample_index - self.confirmation_window + 1
         self._detection_history = [
             (sample, sensor)
