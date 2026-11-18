@@ -1,4 +1,4 @@
-"""Compare autonomous operating modes."""
+"""compare autonomous operating modes"""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ def run_mode_scenario(
     failed_sun_sensor: int | None = None,
     magnetic_disturbance: np.ndarray | None = None,
 ) -> dict[str, object]:
-    """Run one autonomous-operating-mode scenario."""
+    """run one autonomous-operating-mode scenario"""
     rng = np.random.default_rng(seed)
 
     sun_reference = unit_vector(np.array([1.0, 0.4, 0.2]))
