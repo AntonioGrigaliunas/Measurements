@@ -144,7 +144,7 @@ def fuzzy_reliability_score(
         "very_high": max(very_high_rules),
     }
 
-    # crisp output values for defuzzification
+    # output values for defuzzification
     output_values = {
         "very_low": 10.0,
         "low": 30.0,
