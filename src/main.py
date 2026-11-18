@@ -1,4 +1,4 @@
-"""Run a simple two-sensor attitude-estimation example."""
+"""run a simple two-sensor attitude-estimation example"""
 
 import numpy as np
 
@@ -24,22 +24,22 @@ from sun_sensor import six_face_sensor_array, unit_vector
 def main() -> None:
     rng = np.random.default_rng(42)
 
-    # Reference Sun and magnetic-field vectors.
+    # reference vectors
     sun_reference = unit_vector(np.array([1.0, 0.4, 0.2]))
     magnetic_reference = unit_vector(np.array([0.2, -0.3, 0.9]))
 
-    # True attitude used by the simulation.
+    # true attitude for the simulation
     true_rotation = rotation_matrix_from_euler(
         roll_deg=20.0,
         pitch_deg=-15.0,
         yaw_deg=35.0,
     )
 
-    # Rotate the reference vectors into the body frame.
+    # rotate refs into body frame
     true_sun_body = true_rotation @ sun_reference
     true_magnetic_body = true_rotation @ magnetic_reference
 
-    # Simulate the Sun sensors.
+    # sun sensor simulation
     sun_array = six_face_sensor_array(
         gains=SUN_GAINS,
         offsets=SUN_OFFSETS,
@@ -56,7 +56,7 @@ def main() -> None:
         sun_readings,
     )
 
-    # Simulate the magnetometer.
+    # magnetometer simulation
     magnetometer = Magnetometer(
         scale_factors=MAG_SCALE_FACTORS,
         bias=MAG_BIAS,
@@ -70,7 +70,7 @@ def main() -> None:
 
     estimated_magnetic_body = unit_vector(magnetic_measurement)
 
-    # Fuse both vector measurements with TRIAD.
+    # TRIAD with both vectors
     estimated_rotation = triad_attitude(
         sun_reference,
         magnetic_reference,
