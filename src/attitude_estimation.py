@@ -16,20 +16,20 @@ def estimate_sun_vector(
     readings = np.asarray(readings, dtype=float)
 
     if sensor_normals.ndim != 2 or sensor_normals.shape[1] != 3:
-        raise ValueError("sensor_normals must have shape (N, 3).")
+        raise ValueError("sensor_normals must have shape (N, 3)")
 
     if readings.shape != (sensor_normals.shape[0],):
-        raise ValueError("readings must contain one value per sensor.")
+        raise ValueError("readings must contain one value per sensor")
 
     if np.any(readings < 0):
-        raise ValueError("Sensor readings must be non-negative.")
+        raise ValueError("Sensor readings must be non-negative")
 
     estimated_raw = sensor_normals.T @ readings
 
     if np.linalg.norm(estimated_raw) == 0:
         raise ValueError(
             "Sun direction cannot be estimated because all directional "
-            "information is zero."
+            "information is zero"
         )
 
     return unit_vector(estimated_raw)
@@ -51,14 +51,14 @@ def estimate_sun_vector_reconfigured(
 
     if sensor_normals.shape != (6, 3):
         raise ValueError(
-            "Reconfigured estimator requires the six-face (6, 3) geometry."
+            "Reconfigured estimator requires the six-face (6, 3) geometry"
         )
     if readings.shape != (6,) or healthy_mask.shape != (6,):
-        raise ValueError("readings and healthy_mask must each contain 6 values.")
+        raise ValueError("readings and healthy_mask must each contain 6 values")
     if np.count_nonzero(healthy_mask) < 5:
         raise ValueError(
             "This first reconfiguration method supports at most one failed "
-            "Sun-sensor channel."
+            "Sun-sensor channel"
         )
 
     if gains is None:
@@ -69,7 +69,7 @@ def estimate_sun_vector_reconfigured(
     gains = np.asarray(gains, dtype=float)
     offsets = np.asarray(offsets, dtype=float)
     if gains.shape != (6,) or offsets.shape != (6,):
-        raise ValueError("gains and offsets must each contain 6 values.")
+        raise ValueError("gains and offsets must each contain 6 values")
 
     corrected = np.maximum(0.0, (readings - offsets) / gains)
 
@@ -87,7 +87,7 @@ def estimate_sun_vector_reconfigured(
     if not np.allclose(sensor_normals, expected_normals, atol=1e-8):
         raise ValueError(
             "Reconfigured estimator currently expects normals ordered as "
-            "+X, -X, +Y, -Y, +Z, -Z."
+            "+X, -X, +Y, -Y, +Z, -Z"
         )
 
     components = np.zeros(3)
@@ -120,12 +120,12 @@ def estimate_sun_vector_reconfigured(
                 unresolved.append((axis, 1.0))
             continue
 
-        raise ValueError("Both sensors of one opposing face pair are unavailable.")
+        raise ValueError("Both sensors of one opposing face pair are unavailable")
 
     if len(unresolved) > 1:
         raise ValueError(
             "More than one Sun-vector component is unresolved; a more general "
-            "fault-tolerant estimator is required."
+            "fault-tolerant estimator is required"
         )
 
     if len(unresolved) == 1:
@@ -140,7 +140,7 @@ def estimate_sun_vector_reconfigured(
         components[axis] = sign * missing_magnitude
 
     if np.linalg.norm(components) == 0:
-        raise ValueError("Reconfigured Sun-vector estimate contains no direction.")
+        raise ValueError("Reconfigured Sun-vector estimate contains no direction")
 
     return unit_vector(components)
 
@@ -178,10 +178,10 @@ def triad_attitude(
     cross_b = np.cross(s_b, m_b)
 
     if np.linalg.norm(cross_r) < 1e-8:
-        raise ValueError("Reference vectors are too close to parallel for TRIAD.")
+        raise ValueError("Reference vectors are too close to parallel for TRIAD")
 
     if np.linalg.norm(cross_b) < 1e-8:
-        raise ValueError("Measured vectors are too close to parallel for TRIAD.")
+        raise ValueError("Measured vectors are too close to parallel for TRIAD")
 
     t1_r = s_r
     t2_r = unit_vector(cross_r)
@@ -207,7 +207,7 @@ def attitude_error_degrees(
     estimated_rotation = np.asarray(estimated_rotation, dtype=float)
 
     if true_rotation.shape != (3, 3) or estimated_rotation.shape != (3, 3):
-        raise ValueError("Rotation matrices must have shape (3, 3).")
+        raise ValueError("Rotation matrices must have shape (3, 3)")
 
     error_rotation = estimated_rotation @ true_rotation.T
     cosine_angle = np.clip(
