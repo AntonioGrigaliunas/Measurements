@@ -27,10 +27,10 @@ class Magnetometer:
         )
 
         if self.scale_factors.shape != (3,):
-            raise ValueError("scale_factors must contain three values.")
+            raise ValueError("scale_factors must contain three values")
 
         if self.bias.shape != (3,):
-            raise ValueError("bias must contain three values.")
+            raise ValueError("bias must contain three values")
 
     def measure(
         self,
@@ -40,7 +40,7 @@ class Magnetometer:
     ) -> np.ndarray:
         """return a simulated three-axis magnetic-field measurement"""
         if noise_std < 0:
-            raise ValueError("noise_std must be non-negative.")
+            raise ValueError("noise_std must be non-negative")
 
         magnetic_field_body = unit_vector(magnetic_field_body)
 
