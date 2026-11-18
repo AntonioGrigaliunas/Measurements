@@ -1,4 +1,4 @@
-"""Simple cosine-response Sun-sensor model."""
+"""simple cosine-response Sun-sensor model"""
 
 from __future__ import annotations
 
@@ -6,7 +6,7 @@ import numpy as np
 
 
 def unit_vector(vector: np.ndarray) -> np.ndarray:
-    """Return a normalized copy of a 3D vector."""
+    """return a normalized copy of a 3D vector"""
     vector = np.asarray(vector, dtype=float)
 
     if vector.shape != (3,):
@@ -20,7 +20,7 @@ def unit_vector(vector: np.ndarray) -> np.ndarray:
 
 
 class SunSensorArray:
-    """Array of Sun sensors with known body-frame orientations."""
+    """array of Sun sensors with known body-frame orientations"""
 
     def __init__(
         self,
@@ -63,25 +63,25 @@ class SunSensorArray:
         noise_std: float = 0.0,
         rng: np.random.Generator | None = None,
     ) -> np.ndarray:
-        """Return the simulated reading of every sensor."""
+        """return the simulated reading of every sensor"""
         if noise_std < 0:
             raise ValueError("noise_std must be non-negative.")
 
         sun_vector = unit_vector(sun_vector)
 
-        # Ideal cosine response.
+        # cosine response
         ideal_response = np.maximum(0.0, self.sensor_normals @ sun_vector)
 
-        # Gain and offset mismatch.
+        # gain/offset mismatch
         readings = self.gains * ideal_response + self.offsets
 
-        # Measurement noise.
+        # add noise
         if noise_std > 0:
             if rng is None:
                 rng = np.random.default_rng()
             readings = readings + rng.normal(0.0, noise_std, self.n_sensors)
 
-        # Clamp negative readings to zero.
+        # no negative sensor output
         return np.maximum(0.0, readings)
 
 
@@ -89,7 +89,7 @@ def six_face_sensor_array(
     gains: np.ndarray | None = None,
     offsets: np.ndarray | None = None,
 ) -> SunSensorArray:
-    """Create one Sun sensor on each face of a cubic CubeSat."""
+    """create one Sun sensor on each face of a cubic CubeSat"""
     normals = np.array(
         [
             [1.0, 0.0, 0.0],   # +X
