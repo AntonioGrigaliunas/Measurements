@@ -1,10 +1,10 @@
-"""Fuzzy reliability scoring."""
+"""fuzzy reliability scoring"""
 
 from __future__ import annotations
 
 
 def triangular(x: float, a: float, b: float, c: float) -> float:
-    """Triangular possibility function."""
+    """triangular possibility function"""
     if x <= a or x >= c:
         return 0.0
     if x == b:
@@ -21,7 +21,7 @@ def trapezoidal(
     c: float,
     d: float,
 ) -> float:
-    """Trapezoidal possibility function."""
+    """trapezoidal possibility function"""
     if x <= a:
         return 1.0 if a == b else 0.0
     if x < b:
@@ -39,7 +39,7 @@ def fuzzify_inputs(
     magnetometer_norm_error: float,
     sun_reconstruction_residual: float,
 ) -> dict[str, dict[str, float]]:
-    """Convert crisp quality indicators into fuzzy beliefs."""
+    """convert crisp quality indicators into fuzzy beliefs"""
     health = {
         "poor": trapezoidal(sun_health_fraction, 0.0, 0.0, 0.55, 0.75),
         "degraded": triangular(sun_health_fraction, 0.65, 5.0 / 6.0, 1.0),
@@ -78,7 +78,7 @@ def fuzzy_reliability_score(
     magnetometer_norm_error: float,
     sun_reconstruction_residual: float,
 ) -> tuple[float, dict[str, float]]:
-    """Return a 0-100 reliability score and fuzzy output possibilities."""
+    """return a 0-100 reliability score and fuzzy output possibilities"""
     beliefs = fuzzify_inputs(
         sun_health_fraction,
         vector_consistency_error_deg,
@@ -91,7 +91,7 @@ def fuzzy_reliability_score(
     m = beliefs["magnetic"]
     s = beliefs["sun_residual"]
 
-    # MIN for AND, MAX for OR.
+    # mIN for AND, MAX for OR
 
     very_high_rules = [
         min(h["good"], c["good"], m["good"], s["good"]),
@@ -144,7 +144,7 @@ def fuzzy_reliability_score(
         "very_high": max(very_high_rules),
     }
 
-    # Crisp output values for defuzzification.
+    # crisp output values for defuzzification
     output_values = {
         "very_low": 10.0,
         "low": 30.0,
@@ -167,7 +167,7 @@ def fuzzy_reliability_score(
 
 
 def reliability_label(score: float) -> str:
-    """Convert the crisp reliability score into a five-level readable label."""
+    """convert the crisp reliability score into a five-level readable label"""
     if score < 20.0:
         return "Very Low"
     if score < 40.0:
