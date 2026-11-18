@@ -1,4 +1,4 @@
-"""Run the final integrated system benchmark."""
+"""run the final integrated system benchmark"""
 
 from __future__ import annotations
 
@@ -33,7 +33,7 @@ SUN_SENSOR_NAMES = ["+X", "-X", "+Y", "-Y", "+Z", "-Z"]
 
 
 def trajectory_rotation(sample: int, n_samples: int) -> np.ndarray:
-    """Generate a smooth attitude trajectory that repeatedly changes lighting."""
+    """generate a smooth attitude trajectory that repeatedly changes lighting"""
     phase = 2.0 * np.pi * sample / n_samples
 
     roll = 25.0 + 35.0 * np.sin(2.0 * phase)
@@ -67,7 +67,7 @@ def run_sequence(
     failed_sun_sensor: int | None = None,
     magnetic_fault: bool = False,
 ) -> dict[str, object]:
-    """Run one continuous scenario with persistent fault memory."""
+    """run one continuous scenario with persistent fault memory"""
     rng = np.random.default_rng(seed)
 
     sun_reference = unit_vector(np.array([1.0, 0.4, 0.2]))
@@ -148,7 +148,7 @@ def run_sequence(
             if error > 10.0:
                 unsafe_outputs += 1
 
-        # Stateless comparison for the persistent Sun fault.
+        # stateless comparison for the persistent Sun fault
         if sun_fault_active and not magnetic_fault:
             stateless = autonomous_attitude_solution(
                 sun_array.sensor_normals,
@@ -337,7 +337,7 @@ def save_sun_memory_plot(
     result: dict[str, object],
     output_path: Path,
 ) -> None:
-    """Plot fuzzy confidence and the persistent-fault latch event."""
+    """plot fuzzy confidence and the persistent-fault latch event"""
     reliability = np.asarray(result["reliability"], dtype=float)
     samples = np.arange(len(reliability))
     fault_start = int(result["fault_start"])
@@ -373,7 +373,7 @@ def save_mode_timeline(
     result: dict[str, object],
     output_path: Path,
 ) -> None:
-    """Plot the discrete operating mode selected over time."""
+    """plot the discrete operating mode selected over time"""
     mode_map = {
         "SAFE": 0,
         "SUN_SAFE": 1,
