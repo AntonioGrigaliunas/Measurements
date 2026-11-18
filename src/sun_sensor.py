@@ -10,11 +10,11 @@ def unit_vector(vector: np.ndarray) -> np.ndarray:
     vector = np.asarray(vector, dtype=float)
 
     if vector.shape != (3,):
-        raise ValueError("Expected a 3-element vector.")
+        raise ValueError("Expected a 3-element vector")
 
     norm = np.linalg.norm(vector)
     if norm == 0:
-        raise ValueError("A zero vector cannot be normalized.")
+        raise ValueError("A zero vector cannot be normalized")
 
     return vector / norm
 
@@ -31,11 +31,11 @@ class SunSensorArray:
         sensor_normals = np.asarray(sensor_normals, dtype=float)
 
         if sensor_normals.ndim != 2 or sensor_normals.shape[1] != 3:
-            raise ValueError("sensor_normals must have shape (N, 3).")
+            raise ValueError("sensor_normals must have shape (N, 3)")
 
         norms = np.linalg.norm(sensor_normals, axis=1)
         if np.any(norms == 0):
-            raise ValueError("Sensor normals cannot contain zero vectors.")
+            raise ValueError("Sensor normals cannot contain zero vectors")
 
         self.sensor_normals = sensor_normals / norms[:, None]
         self.n_sensors = self.sensor_normals.shape[0]
@@ -52,10 +52,10 @@ class SunSensorArray:
         )
 
         if self.gains.shape != (self.n_sensors,):
-            raise ValueError("gains must have one value per sensor.")
+            raise ValueError("gains must have one value per sensor")
 
         if self.offsets.shape != (self.n_sensors,):
-            raise ValueError("offsets must have one value per sensor.")
+            raise ValueError("offsets must have one value per sensor")
 
     def measure(
         self,
@@ -65,7 +65,7 @@ class SunSensorArray:
     ) -> np.ndarray:
         """return the simulated reading of every sensor"""
         if noise_std < 0:
-            raise ValueError("noise_std must be non-negative.")
+            raise ValueError("noise_std must be non-negative")
 
         sun_vector = unit_vector(sun_vector)
 
