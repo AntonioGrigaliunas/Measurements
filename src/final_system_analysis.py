@@ -252,7 +252,7 @@ def print_summary(results: list[dict[str, object]]) -> None:
     print("--------------------------------------------")
     print(
         "Scenario       NORMAL  RECONFIG  SUN_SAFE  SAFE   Full att.  "
-        "Mean err  P95 err  Unsafe>10  Mean rel."
+        "Mean err  P95 err  Unsafe>10  Mean rel"
     )
     print(
         "                 [%]      [%]       [%]     [%]      [%]      "
@@ -280,7 +280,7 @@ def print_summary(results: list[dict[str, object]]) -> None:
     print("--------------------------------")
     print(
         "Scenario       NORMAL  RECONFIG  SUN_SAFE  SAFE   Full att.  "
-        "Mean err  P95 err  Unsafe>10  Mean rel."
+        "Mean err  P95 err  Unsafe>10  Mean rel"
     )
     print(
         "                 [%]      [%]       [%]     [%]      [%]      "
@@ -313,7 +313,7 @@ def print_summary(results: list[dict[str, object]]) -> None:
         print("--------------------------------------")
         print(
             "Fault starts at sample "
-            f"{sun_result['fault_start']}."
+            f"{sun_result['fault_start']}"
         )
         print(
             "Fault memory latched at sample: "
