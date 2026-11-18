@@ -1,4 +1,4 @@
-"""Three-axis magnetometer model."""
+"""three-axis magnetometer model"""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from sun_sensor import unit_vector
 
 
 class Magnetometer:
-    """Three-axis magnetometer with scale-factor, bias, and Gaussian noise."""
+    """three-axis magnetometer with scale-factor, bias, and Gaussian noise"""
 
     def __init__(
         self,
@@ -38,7 +38,7 @@ class Magnetometer:
         noise_std: float = 0.0,
         rng: np.random.Generator | None = None,
     ) -> np.ndarray:
-        """Return a simulated three-axis magnetic-field measurement."""
+        """return a simulated three-axis magnetic-field measurement"""
         if noise_std < 0:
             raise ValueError("noise_std must be non-negative.")
 
