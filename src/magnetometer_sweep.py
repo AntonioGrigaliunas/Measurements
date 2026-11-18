@@ -1,4 +1,4 @@
-"""Magnetometer disturbance sweep."""
+"""magnetometer disturbance sweep"""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ def run_magnetic_disturbance_sweep(
     ),
     seed: int = 42,
 ) -> list[dict[str, np.ndarray | str | float]]:
-    """Sweep magnetic disturbance magnitude along one fixed direction."""
+    """sweep magnetic disturbance magnitude along one fixed direction"""
     results: list[dict[str, np.ndarray | str | float]] = []
 
     for level_ut in disturbance_levels_ut:
@@ -49,7 +49,7 @@ def run_magnetic_disturbance_sweep(
 def print_sweep_summary(
     results: list[dict[str, np.ndarray | str | float]],
 ) -> None:
-    """Print the main metrics for each disturbance level."""
+    """print the main metrics for each disturbance level"""
     print("\nMagnetometer disturbance sweep")
     print("-------------------------------")
     print(
@@ -77,7 +77,7 @@ def save_disturbance_sweep_plot(
     results: list[dict[str, np.ndarray | str | float]],
     output_path: Path,
 ) -> None:
-    """Plot attitude error and fuzzy reliability versus magnetic disturbance."""
+    """plot attitude error and fuzzy reliability versus magnetic disturbance"""
     levels_ut = np.array([
         float(result["disturbance_ut"])
         for result in results
@@ -141,7 +141,7 @@ def save_low_reliability_plot(
     results: list[dict[str, np.ndarray | str | float]],
     output_path: Path,
 ) -> None:
-    """Plot the fraction of simulations classified as low reliability."""
+    """plot the fraction of simulations classified as low reliability"""
     levels_ut = np.array([
         float(result["disturbance_ut"])
         for result in results
