@@ -1,23 +1,4 @@
-"""Automatic Sun-sensor fault detection for the self-reconfiguring CubeSat.
-
-The detector exploits the six-face +/-X, +/-Y, +/-Z geometry.
-
-A hard failure that matters most occurs when the illuminated sensor of an
-opposing pair reports approximately zero. In that case both sensors in the pair
-appear dark even though the other two axes imply, through norm(s) = 1, that the
-missing component should be substantial.
-
-The sign ambiguity of that missing component is resolved using the known angle
-between the Sun and geomagnetic reference vectors and the measured
-magnetometer direction.
-
-Important limitation
---------------------
-A failed sensor that is already on the dark side of the CubeSat is not
-observable from one static snapshot because zero is also its correct reading.
-Such a dormant failure has little immediate effect on the Sun estimate and can
-be detected later when spacecraft motion brings that face into illumination.
-"""
+"""Automatic Sun-sensor fault detection."""
 
 from __future__ import annotations
 
