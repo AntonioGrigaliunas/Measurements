@@ -1,4 +1,4 @@
-"""Attitude-estimation utilities for the MA4822 CubeSat project."""
+"""Attitude estimation helpers."""
 
 from __future__ import annotations
 
@@ -44,32 +44,7 @@ def estimate_sun_vector_reconfigured(
     offsets: np.ndarray | None = None,
     dark_threshold: float = 0.08,
 ) -> np.ndarray:
-    """Estimate the Sun direction after a known Sun-sensor channel failure.
-
-    This routine is specialized for the six-face +/-X, +/-Y, +/-Z CubeSat
-    geometry. Healthy measurements are first corrected for known gain/offset
-    calibration. For an axis whose opposite-face pair is fully healthy, the
-    signed component is reconstructed from the difference of the two readings.
-
-    If exactly one face has failed and the surviving opposite face is dark, the
-    missing component is recovered from the unit-vector constraint. Its sign is
-    inferred from the failed face: e.g. if +X failed while -X is dark, the Sun
-    is assumed to lie on the +X side.
-
-    Parameters
-    ----------
-    sensor_normals:
-        Six body-frame face normals in the order +/-X, +/-Y, +/-Z.
-    readings:
-        Six non-negative sensor measurements.
-    healthy_mask:
-        Boolean array; False marks a failed/unusable channel.
-    gains, offsets:
-        Optional per-channel calibration values.
-    dark_threshold:
-        Corrected signal below this value is treated as effectively dark when
-        only one sensor of an opposing pair remains available.
-    """
+    """Estimate the Sun direction after a known Sun-sensor channel failure."""
     sensor_normals = np.asarray(sensor_normals, dtype=float)
     readings = np.asarray(readings, dtype=float)
     healthy_mask = np.asarray(healthy_mask, dtype=bool)
@@ -98,7 +73,7 @@ def estimate_sun_vector_reconfigured(
 
     corrected = np.maximum(0.0, (readings - offsets) / gains)
 
-    # Verify the expected face ordering before using pair-based reconstruction.
+    # Check the expected face order.
     expected_normals = np.array(
         [
             [1.0, 0.0, 0.0],
@@ -193,11 +168,7 @@ def triad_attitude(
     sun_body: np.ndarray,
     magnetic_body: np.ndarray,
 ) -> np.ndarray:
-    """Estimate the body-from-reference rotation matrix using TRIAD.
-
-    The two reference vectors are known in the global/reference frame, while
-    the two measured vectors are expressed in the CubeSat body frame.
-    """
+    """Estimate the body-from-reference rotation matrix using TRIAD."""
     s_r = unit_vector(sun_reference)
     m_r = unit_vector(magnetic_reference)
     s_b = unit_vector(sun_body)
@@ -223,7 +194,7 @@ def triad_attitude(
     reference_triad = np.column_stack((t1_r, t2_r, t3_r))
     body_triad = np.column_stack((t1_b, t2_b, t3_b))
 
-    # Maps vectors from the reference frame into the CubeSat body frame.
+    # Reference frame to body frame.
     return body_triad @ reference_triad.T
 
 
