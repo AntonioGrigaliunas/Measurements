@@ -1,4 +1,4 @@
-"""Monte Carlo attitude-sensitivity study."""
+"""monte Carlo attitude-sensitivity study"""
 
 from __future__ import annotations
 
@@ -27,7 +27,7 @@ def random_rotation_matrices(
     n_samples: int,
     rng: np.random.Generator,
 ) -> list[np.ndarray]:
-    """Generate uniformly distributed random 3D rotation matrices."""
+    """generate uniformly distributed random 3D rotation matrices"""
     rotations: list[np.ndarray] = []
 
     for _ in range(n_samples):
@@ -71,7 +71,7 @@ def run_attitude_noise_sensitivity(
     ),
     seed: int = 42,
 ) -> dict[tuple[float, float], np.ndarray]:
-    """Return full-attitude error samples for each pair of sensor-noise levels."""
+    """return full-attitude error samples for each pair of sensor-noise levels"""
     rng = np.random.default_rng(seed)
 
     sun_reference = unit_vector(np.array([1.0, 0.4, 0.2]))
@@ -144,7 +144,7 @@ def run_attitude_noise_sensitivity(
 def print_summary(
     results: dict[tuple[float, float], np.ndarray],
 ) -> None:
-    """Print full-attitude error statistics for every sensor-noise pair."""
+    """print full-attitude error statistics for every sensor-noise pair"""
     print("\nMonte Carlo full-attitude sensitivity results")
     print("--------------------------------------------")
     print(
@@ -171,7 +171,7 @@ def save_noise_sensitivity_plot(
     results: dict[tuple[float, float], np.ndarray],
     output_path: Path,
 ) -> None:
-    """Plot mean attitude error against Sun-sensor noise for each mag noise."""
+    """plot mean attitude error against Sun-sensor noise for each mag noise"""
     sun_levels = sorted({key[0] for key in results})
     mag_levels = sorted({key[1] for key in results})
 
@@ -205,7 +205,7 @@ def save_attitude_error_histogram(
     mag_noise: float,
     output_path: Path,
 ) -> None:
-    """Save an attitude-error distribution for one representative case."""
+    """save an attitude-error distribution for one representative case"""
     plt.figure(figsize=(7, 4.5))
     plt.hist(errors, bins=30)
     plt.xlabel("Full-attitude error [deg]")
