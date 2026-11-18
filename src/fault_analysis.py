@@ -416,7 +416,7 @@ def main() -> None:
     n_samples = 1000
     base_seed = 42
 
-    # reuse the same random sequence for a fair comparison
+    # same random sequence for fair comparison
     results = [
         run_scenario(
             "Healthy",
