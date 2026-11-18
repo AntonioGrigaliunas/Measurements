@@ -1,4 +1,4 @@
-"""Automatic Sun-sensor fault detection."""
+"""automatic Sun-sensor fault detection"""
 
 from __future__ import annotations
 
@@ -26,7 +26,7 @@ def detect_failed_sun_sensor(
     min_failed_residual: float = DEFAULT_MIN_FAILED_RESIDUAL,
     max_consistency_error_deg: float = DEFAULT_MAX_CONSISTENCY_ERROR_DEG,
 ) -> dict[str, float | int | str | None]:
-    """Detect one impactful hard-failed Sun-sensor channel."""
+    """detect one impactful hard-failed Sun-sensor channel"""
     readings = np.asarray(readings, dtype=float)
     magnetic_measurement = np.asarray(magnetic_measurement, dtype=float)
     gains = np.asarray(gains, dtype=float)
