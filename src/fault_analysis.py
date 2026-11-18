@@ -1,4 +1,4 @@
-"""Fault analysis and reliability checks."""
+"""fault analysis and reliability checks"""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ SUN_SENSOR_NAMES = ["+X", "-X", "+Y", "-Y", "+Z", "-Z"]
 
 
 def random_rotation_matrix(rng: np.random.Generator) -> np.ndarray:
-    """Generate one uniformly distributed random 3D rotation matrix."""
+    """generate one uniformly distributed random 3D rotation matrix"""
     q = rng.normal(size=4)
     q = q / np.linalg.norm(q)
     w, x, y, z = q
@@ -62,7 +62,7 @@ def sun_reconstruction_residual(
     readings: np.ndarray,
     estimated_sun_body: np.ndarray,
 ) -> float:
-    """Return RMS mismatch between measured and reconstructed Sun readings."""
+    """return RMS mismatch between measured and reconstructed Sun readings"""
     ideal_prediction = np.maximum(
         0.0,
         sensor_array.sensor_normals @ estimated_sun_body,
@@ -85,7 +85,7 @@ def run_scenario(
     failed_sun_sensor: int | None = None,
     magnetic_disturbance: np.ndarray | None = None,
 ) -> dict[str, np.ndarray | str]:
-    """Simulate one healthy/faulted sensor scenario."""
+    """simulate one healthy/faulted sensor scenario"""
     rng = np.random.default_rng(seed)
 
     sun_reference = unit_vector(np.array([1.0, 0.4, 0.2]))
@@ -203,7 +203,7 @@ def run_scenario(
 
 
 def print_summary(results: list[dict[str, np.ndarray | str]]) -> None:
-    """Print a compact comparison of fault scenarios."""
+    """print a compact comparison of fault scenarios"""
     print("\nFault analysis with improved fuzzy reliability")
     print("----------------------------------------------")
     print(
@@ -234,7 +234,7 @@ def save_summary_plot(
     results: list[dict[str, np.ndarray | str]],
     output_path: Path,
 ) -> None:
-    """Plot mean attitude error and fuzzy reliability by scenario."""
+    """plot mean attitude error and fuzzy reliability by scenario"""
     names = [str(result["name"]) for result in results]
     mean_errors = [np.mean(result["attitude_error"]) for result in results]
     mean_reliability = [np.mean(result["reliability"]) for result in results]
@@ -303,7 +303,7 @@ def save_reliability_validation_plot(
     results: list[dict[str, np.ndarray | str]],
     output_path: Path,
 ) -> None:
-    """Plot fuzzy reliability against the true simulation attitude error."""
+    """plot fuzzy reliability against the true simulation attitude error"""
     plt.figure(figsize=(8, 5))
 
     for result in results:
@@ -329,7 +329,7 @@ def save_residual_plot(
     results: list[dict[str, np.ndarray | str]],
     output_path: Path,
 ) -> None:
-    """Compare Sun reconstruction residuals across fault scenarios."""
+    """compare Sun reconstruction residuals across fault scenarios"""
     names = [str(result["name"]) for result in results]
     mean_residuals = [np.mean(result["sun_residual"]) for result in results]
 
@@ -360,7 +360,7 @@ def save_all_sun_failures_plot(
     results: list[dict[str, np.ndarray | str]],
     output_path: Path,
 ) -> None:
-    """Compare the effect of failing each individual Sun sensor."""
+    """compare the effect of failing each individual Sun sensor"""
     names = [str(result["name"]) for result in results]
     mean_errors = [np.mean(result["attitude_error"]) for result in results]
     p95_errors = [
@@ -416,7 +416,7 @@ def main() -> None:
     n_samples = 1000
     base_seed = 42
 
-    # Reuse the same random sequence for a fair comparison.
+    # reuse the same random sequence for a fair comparison
     results = [
         run_scenario(
             "Healthy",
