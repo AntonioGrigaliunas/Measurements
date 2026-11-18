@@ -13,6 +13,19 @@
 \usepackage{listings}
 \definecolor{ntuNavy}{RGB}{28,44,96}
 
+\lstdefinestyle{pythonmain}{
+    language=Python,
+    basicstyle=\ttfamily\footnotesize,
+    frame=single,
+    breaklines=true,
+    breakatwhitespace=false,
+    showstringspaces=false,
+    tabsize=4,
+    columns=fullflexible,
+    keepspaces=true,
+    captionpos=b
+}
+
 \lstdefinestyle{pythonappendix}{
     language=Python,
     basicstyle=\ttfamily\scriptsize,
@@ -459,6 +472,33 @@ For the static Monte Carlo studies, each trial follows the same sequence:
 \end{enumerate}
 
 One thousand random attitudes are used for each static case. This allows the six possible failed Sun-sensor faces to be compared without favouring a particular spacecraft orientation.
+
+
+\subsection{Key Implementation Logic}
+
+The full source code is provided in Appendix~\ref{app:code}, but two short excerpts show the main fault-tolerant logic used by the autonomous estimator. Listing~\ref{lst:reconfiguration-logic} shows how a remembered or newly detected failed Sun-sensor channel is selected and how the Sun-vector estimator switches between the nominal and reconfigured reconstruction.
+
+\lstinputlisting[
+    style=pythonmain,
+    firstline=163,
+    lastline=191,
+    caption={Selection of the active failed Sun-sensor channel and reconfigured Sun-vector estimation.},
+    label={lst:reconfiguration-logic}
+]{src/autonomous_attitude.py}
+
+The persistent fault memory is shown in Listing~\ref{lst:fault-memory}. Only detections inside the current rolling window are retained. Once the same channel reaches the required number of confirmations, that sensor is latched as failed and remains excluded until the manager is reset.
+
+\lstinputlisting[
+    style=pythonmain,
+    firstline=303,
+    lastline=329,
+    caption={Rolling confirmation logic used to latch a persistent Sun-sensor failure.},
+    label={lst:fault-memory}
+]{src/autonomous_attitude.py}
+
+The operating mode is then determined from the reconstructed Sun vector and magnetometer-health result. A valid magnetic measurement allows the system to return either \texttt{NORMAL} or \texttt{RECONFIGURED}; a rejected magnetic measurement produces \texttt{SUN\_SAFE}; and failure to obtain a usable Sun direction produces \texttt{SAFE}. The complete decision path is included in Appendix~\ref{app:code}.
+
+
 
 A second, time-ordered validation is used for persistent fault memory and mode switching. The spacecraft follows a smoothly changing 1200-sample attitude trajectory. The first 300 samples are fault-free; from sample 300 onward the selected Sun-sensor and/or magnetic fault remains active. At every sample the autonomous manager performs fault detection, updates the rolling confirmation memory, reconstructs the Sun vector if required, evaluates magnetometer health, selects an operating mode, and calculates the fuzzy confidence score. Full-attitude error is evaluated only when the system actually outputs a TRIAD attitude.
 
