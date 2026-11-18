@@ -83,7 +83,7 @@ def save_noise_sensitivity() -> None:
     axes[1].set_title("Sensitivity to magnetometer noise")
     axes[1].grid(True, alpha=0.3)
     axes[1].legend(
-        title="Sun noise std.",
+        title="Sun noise std",
         fontsize=8,
         title_fontsize=8,
     )
