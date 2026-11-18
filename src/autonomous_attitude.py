@@ -1,4 +1,4 @@
-"""Autonomous attitude estimation and fault handling."""
+"""autonomous attitude estimation and fault handling"""
 
 from __future__ import annotations
 
@@ -28,7 +28,7 @@ def assess_magnetometer_health(
     norm_error_limit: float = MAG_NORM_ERROR_LIMIT,
     consistency_error_limit_deg: float = MAG_CONSISTENCY_ERROR_LIMIT_DEG,
 ) -> dict[str, float | bool]:
-    """Assess whether the magnetometer is suitable for full TRIAD attitude."""
+    """assess whether the magnetometer is suitable for full TRIAD attitude"""
     magnetic_direction = unit_vector(magnetic_measurement)
 
     reference_separation = angular_error_degrees(
@@ -65,7 +65,7 @@ def sun_reconstruction_residual(
     offsets: np.ndarray,
     healthy_mask: np.ndarray | None = None,
 ) -> float:
-    """Return calibrated RMS Sun-sensor residual over usable channels."""
+    """return calibrated RMS Sun-sensor residual over usable channels"""
     ideal_prediction = np.maximum(
         0.0,
         np.asarray(sensor_normals, dtype=float) @ estimated_sun_body,
@@ -99,7 +99,7 @@ def _reliability_output(
     offsets: np.ndarray,
     failed_sensor: int | None,
 ) -> dict[str, object]:
-    """Calculate the fuzzy confidence score for the current sensor solution."""
+    """calculate the fuzzy confidence score for the current sensor solution"""
     healthy_mask = np.ones(len(sun_readings), dtype=bool)
     if failed_sensor is not None:
         healthy_mask[int(failed_sensor)] = False
@@ -149,7 +149,7 @@ def autonomous_attitude_solution(
     offsets: np.ndarray = SUN_OFFSETS,
     remembered_failed_sun_sensor: int | None = None,
 ) -> dict[str, object]:
-    """Return one autonomous attitude solution."""
+    """return one autonomous attitude solution"""
     detection = detect_failed_sun_sensor(
         sun_readings,
         magnetic_measurement,
@@ -274,7 +274,7 @@ def autonomous_attitude_solution(
 
 
 class AutonomousAttitudeManager:
-    """Stateful attitude manager with persistent Sun-sensor fault memory."""
+    """stateful attitude manager with persistent Sun-sensor fault memory"""
 
     def __init__(
         self,
@@ -295,7 +295,7 @@ class AutonomousAttitudeManager:
         self.reset()
 
     def reset(self) -> None:
-        """Clear all remembered fault state."""
+        """clear all remembered fault state"""
         self.latched_failed_sun_sensor: int | None = None
         self._sample_index = -1
         self._detection_history: list[tuple[int, int]] = []
@@ -303,7 +303,7 @@ class AutonomousAttitudeManager:
     def _update_fault_memory(self, detected_sensor: int | None) -> None:
         self._sample_index += 1
 
-        # Drop old detections.
+        # drop old detections
         oldest_allowed = self._sample_index - self.confirmation_window + 1
         self._detection_history = [
             (sample, sensor)
@@ -335,7 +335,7 @@ class AutonomousAttitudeManager:
         sun_reference: np.ndarray,
         magnetic_reference: np.ndarray,
     ) -> dict[str, object]:
-        """Process one sensor sample and update persistent fault memory."""
+        """process one sensor sample and update persistent fault memory"""
         detection = detect_failed_sun_sensor(
             sun_readings,
             magnetic_measurement,
