@@ -303,7 +303,7 @@ class AutonomousAttitudeManager:
     def _update_fault_memory(self, detected_sensor: int | None) -> None:
         self._sample_index += 1
 
-        # drop old detections
+        # remove old detections
         oldest_allowed = self._sample_index - self.confirmation_window + 1
         self._detection_history = [
             (sample, sensor)
