@@ -1,14 +1,4 @@
-"""Benchmark automatic Sun-sensor fault detection and reconfiguration.
-
-Three estimators are compared after each injected single Sun-sensor failure:
-1. Standard: unaware of the fault.
-2. Automatic: detects a failed face from sensor geometry plus magnetic-vector
-   consistency and reconfigures only when a fault is detected.
-3. Oracle: reconfigures with the true failed-sensor identity supplied directly.
-
-The oracle is not a flight algorithm. It is an upper benchmark showing how
-much performance is available if fault identification is perfect.
-"""
+"""Compare automatic and known-fault reconfiguration."""
 
 from __future__ import annotations
 
