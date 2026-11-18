@@ -10,7 +10,24 @@
 \usepackage{float}
 \usepackage[hidelinks]{hyperref}
 \usepackage{xcolor}
+\usepackage{listings}
 \definecolor{ntuNavy}{RGB}{28,44,96}
+
+\lstdefinestyle{pythonappendix}{
+    language=Python,
+    basicstyle=\ttfamily\scriptsize,
+    numbers=left,
+    numberstyle=\tiny,
+    stepnumber=1,
+    numbersep=8pt,
+    frame=single,
+    breaklines=true,
+    breakatwhitespace=false,
+    showstringspaces=false,
+    tabsize=4,
+    columns=fullflexible,
+    keepspaces=true
+}
 
 \hypersetup{
     pdftitle={Multi-Sensor Integration for Fault-Tolerant CubeSat Attitude Determination},
@@ -582,5 +599,60 @@ The central result is that low-cost sensing can be made more useful by coupling 
 
 \bibliographystyle{ieeetr}
 \bibliography{references}
+
+\clearpage
+\appendix
+\section{Complete Python Code}
+\label{app:code}
+
+The complete Python implementation used for the simulations and figures is included below. The files are reproduced directly from the project source so that the implementation corresponding to the reported results is fully documented.
+
+\subsection{\texttt{attitude\_estimation.py}}
+\lstinputlisting[style=pythonappendix]{src/attitude_estimation.py}
+
+\subsection{\texttt{automatic\_reconfiguration\_analysis.py}}
+\lstinputlisting[style=pythonappendix]{src/automatic_reconfiguration_analysis.py}
+
+\subsection{\texttt{autonomous\_attitude.py}}
+\lstinputlisting[style=pythonappendix]{src/autonomous_attitude.py}
+
+\subsection{\texttt{autonomous\_mode\_analysis.py}}
+\lstinputlisting[style=pythonappendix]{src/autonomous_mode_analysis.py}
+
+\subsection{\texttt{fault\_analysis.py}}
+\lstinputlisting[style=pythonappendix]{src/fault_analysis.py}
+
+\subsection{\texttt{final\_system\_analysis.py}}
+\lstinputlisting[style=pythonappendix]{src/final_system_analysis.py}
+
+\subsection{\texttt{fuzzy\_reliability.py}}
+\lstinputlisting[style=pythonappendix]{src/fuzzy_reliability.py}
+
+\subsection{\texttt{magnetometer.py}}
+\lstinputlisting[style=pythonappendix]{src/magnetometer.py}
+
+\subsection{\texttt{magnetometer\_sweep.py}}
+\lstinputlisting[style=pythonappendix]{src/magnetometer_sweep.py}
+
+\subsection{\texttt{main.py}}
+\lstinputlisting[style=pythonappendix]{src/main.py}
+
+\subsection{\texttt{monte\_carlo.py}}
+\lstinputlisting[style=pythonappendix]{src/monte_carlo.py}
+
+\subsection{\texttt{reconfiguration\_analysis.py}}
+\lstinputlisting[style=pythonappendix]{src/reconfiguration_analysis.py}
+
+\subsection{\texttt{report\_figures.py}}
+\lstinputlisting[style=pythonappendix]{src/report_figures.py}
+
+\subsection{\texttt{sensor\_parameters.py}}
+\lstinputlisting[style=pythonappendix]{src/sensor_parameters.py}
+
+\subsection{\texttt{sun\_sensor.py}}
+\lstinputlisting[style=pythonappendix]{src/sun_sensor.py}
+
+\subsection{\texttt{sun\_sensor\_fault\_detection.py}}
+\lstinputlisting[style=pythonappendix]{src/sun_sensor_fault_detection.py}
 
 \end{document}
