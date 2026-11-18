@@ -1,4 +1,4 @@
-"""Benchmark autonomous NORMAL / RECONFIGURED / SUN_SAFE operation."""
+"""Compare autonomous operating modes."""
 
 from __future__ import annotations
 
