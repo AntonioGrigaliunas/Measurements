@@ -1,9 +1,4 @@
-"""Generate the final figures used in the MA4822 report.
-
-The estimator and fault logic are treated as frozen. This script only reruns
-the existing validation analyses and creates publication-ready figures in
-report/figures/.
-"""
+"""Generate the final report figures."""
 
 from __future__ import annotations
 
