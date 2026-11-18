@@ -1,4 +1,4 @@
-"""Simple three-axis magnetometer model for the MA4822 CubeSat project."""
+"""Three-axis magnetometer model."""
 
 from __future__ import annotations
 
