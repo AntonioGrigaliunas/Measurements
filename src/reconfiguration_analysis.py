@@ -1,4 +1,4 @@
-"""Compare standard and reconfigured Sun-sensor estimation."""
+"""compare standard and reconfigured Sun-sensor estimation"""
 
 from __future__ import annotations
 
@@ -34,7 +34,7 @@ def compare_one_failed_sensor(
     n_samples: int = 1000,
     seed: int = 42,
 ) -> dict[str, float | str]:
-    """Compare standard and reconfigured TRIAD for one failed Sun sensor."""
+    """compare standard and reconfigured TRIAD for one failed Sun sensor"""
     rng = np.random.default_rng(seed)
 
     sun_reference = unit_vector(np.array([1.0, 0.4, 0.2]))
@@ -134,7 +134,7 @@ def save_comparison_plot(
     results: list[dict[str, float | str]],
     output_path: Path,
 ) -> None:
-    """Save standard-vs-reconfigured mean attitude error comparison."""
+    """save standard-vs-reconfigured mean attitude error comparison"""
     names = [str(result["sensor"]) for result in results]
     standard = [float(result["standard_mean"]) for result in results]
     reconfigured = [float(result["reconfigured_mean"]) for result in results]
