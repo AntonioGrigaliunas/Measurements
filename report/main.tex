@@ -510,13 +510,11 @@ The estimator parameters and decision thresholds are frozen before generating th
 
 \section{Results}
 
-\subsection{Nominal Performance}
+\subsection{Nominal Performance and Noise Sensitivity}
 
-The final temporal validation preserves the nominal accuracy of the original sensor-fusion system. In the healthy sequence, the system remains in \texttt{NORMAL} mode for 99.2\% of the final 900-sample comparison interval, produces full attitude for 99.6\% of the samples, and gives a mean full-attitude error of \SI{2.337}{\degree}. The 95th-percentile error is \SI{4.476}{\degree}. Thus, the added autonomy logic does not materially degrade the baseline attitude solution.
+The first question is whether the added fault-tolerant logic preserves normal attitude-determination performance when the sensors are healthy. In the healthy temporal sequence, the system remains in \texttt{NORMAL} mode for 99.2\% of the final 900-sample comparison interval and provides a full attitude solution for 99.6\% of the samples. The mean full-attitude error is \SI{2.337}{\degree}, with a 95th-percentile error of \SI{4.476}{\degree}. The autonomy logic therefore preserves the nominal performance of the baseline sensor-fusion system.
 
-\subsection{Sensor-Noise Sensitivity}
-
-Before analysing explicit faults, the baseline TRIAD estimator was evaluated over a grid of Sun-sensor and magnetometer random-noise levels. This separates ordinary measurement uncertainty from the larger hard-fault cases considered later.
+The baseline TRIAD estimator was also evaluated over a grid of Sun-sensor and magnetometer random-noise levels to identify which measurement uncertainty has the larger influence on the attitude estimate.
 
 \IfFileExists{figures/final_noise_sensitivity.png}{
 \begin{figure}[htbp]
@@ -527,13 +525,13 @@ Before analysing explicit faults, the baseline TRIAD estimator was evaluated ove
 \end{figure}
 }{}
 
-At the nominal RM3100-class magnetometer-noise level, increasing the normalized Sun-sensor noise standard deviation from 0 to 0.05 increases the mean full-attitude error from approximately \SI{1.57}{\degree} to \SI{4.64}{\degree}. The nominal Sun-noise case of 0.02 gives approximately \SI{2.32}{\degree} mean error, consistent with the healthy-system results reported above.
+At the nominal RM3100-class magnetometer-noise level, increasing the normalized Sun-sensor noise standard deviation from 0 to 0.05 increases the mean full-attitude error from approximately \SI{1.57}{\degree} to \SI{4.64}{\degree}. The nominal Sun-noise case of 0.02 gives approximately \SI{2.32}{\degree} mean error, which agrees closely with the healthy temporal result.
 
-Over the much smaller intrinsic magnetometer-noise range tested here, changing the magnetometer random-noise level has comparatively little effect on the mean attitude error. This indicates that the nominal estimator is more sensitive to the coarse Sun-vector reconstruction than to the intrinsic RM3100-class random noise. This does not mean magnetic faults are unimportant: the later magnetic-fault study applies a much larger spacecraft-generated disturbance, which is handled by the dedicated magnetic-health gate and transition to \texttt{SUN\_SAFE} mode.
+Across the much smaller intrinsic magnetometer-noise range considered here, changing the magnetometer random-noise level has comparatively little effect on the mean attitude error. The nominal system is therefore more sensitive to uncertainty in the coarse Sun-vector reconstruction than to the intrinsic RM3100-class random noise. This result applies to nominal sensor noise only; the much larger magnetic disturbance considered later is treated separately as a fault condition.
 
 \subsection{Automatic Sun-Sensor Detection and Reconfiguration}
 
-A complete zero-output failure was injected independently into each of the six Sun-sensor faces. Figure~\ref{fig:reconfiguration} compares the standard estimator, the automatic detector/reconfiguration method, and a known-fault benchmark in which the failed face is supplied directly to the estimator.
+The next test evaluates whether a failed Sun-sensor channel can be detected and compensated without knowing the failed face in advance. A complete zero-output failure was injected independently into each of the six Sun-sensor faces. Figure~\ref{fig:reconfiguration} compares the standard estimator, the automatic detector/reconfiguration method, and a known-fault benchmark in which the failed face is supplied directly to the estimator.
 
 \IfFileExists{figures/final_sun_reconfiguration.png}{
 \begin{figure}[htbp]
@@ -544,15 +542,15 @@ A complete zero-output failure was injected independently into each of the six S
 \end{figure}
 }{}
 
-Across the six faces, the standard estimator gives approximately \SIrange{17.8}{20.0}{\degree} mean error. Automatic fault detection reduces this to approximately \SIrange{3.8}{4.7}{\degree}, corresponding to a 75.6--78.7\% improvement. If the failed face is known perfectly, the reconfigured estimator achieves approximately \SI{2.9}{\degree} mean error. The automatic detector identifies approximately 92--96\% of failures when the failed face should have a substantial illumination signal, while the healthy instantaneous false-alarm rate is 0.18\%.
+Across the six failed faces, the standard estimator gives approximately \SIrange{17.8}{20.0}{\degree} mean error. Automatic detection and reconfiguration reduces this to approximately \SIrange{3.8}{4.7}{\degree}, corresponding to a 75.6--78.7\% improvement. If the failed face is known perfectly, the reconfigured estimator achieves approximately \SI{2.9}{\degree} mean error.
 
-The remaining gap between automatic and known-fault performance is principally caused by observability: a sensor that is already on the dark side produces approximately zero whether it is healthy or failed.
+The automatic detector identifies approximately 92--96\% of failures when the failed face should have a substantial illumination signal, while the healthy instantaneous false-alarm rate is 0.18\%. The remaining gap between the automatic and known-fault cases is mainly caused by observability: a sensor on the dark side produces approximately zero whether it is healthy or failed. Even with this limitation, the automatic method recovers most of the performance available when the failed sensor is known in advance.
 
-\subsection{Persistent Fault Memory}
+\subsection{Benefit of Persistent Fault Memory}
 
-The temporal validation tests whether a detected Sun-sensor failure remains excluded as the CubeSat rotates through different illumination conditions. For the $+X$ fault, the final rolling confirmation logic latches the failure at sample 428 after the fault begins at sample 300.
+The static detector can temporarily lose evidence of a failed Sun sensor when that face rotates into darkness. The temporal test therefore evaluates whether persistent fault memory improves the safety of the attitude solution as illumination changes. For the persistent $+X$ failure, the fault begins at sample 300 and the rolling confirmation logic latches the failed channel at sample 428.
 
-Without persistent memory, 3.56\% of post-fault samples produce a full-attitude output whose true error exceeds $10^\circ$. With the persistent-memory manager this falls to 1.44\%, as shown in Fig.~\ref{fig:memory-benefit}.
+Without persistent memory, 3.56\% of post-fault samples produce a full-attitude output whose true error exceeds $10^\circ$. With the persistent-memory manager this falls to 1.44\%, as shown in Fig.~\ref{fig:memory-benefit}. This corresponds to an approximately 60\% reduction in unsafe post-fault outputs.
 
 \IfFileExists{figures/final_persistent_memory_benefit.png}{
 \begin{figure}[htbp]
@@ -563,9 +561,11 @@ Without persistent memory, 3.56\% of post-fault samples produce a full-attitude 
 \end{figure}
 }{}
 
-\subsection{Autonomous Operating Modes}
+The memory therefore provides a clear benefit beyond instantaneous fault detection: once sufficient evidence has accumulated, the failed channel remains excluded even when the current illumination geometry no longer makes the failure directly observable.
 
-Table~\ref{tab:final-results} summarizes the post-fault portion of the continuous trajectory. The Unsafe $>10^\circ$ percentage is the fraction of all post-fault samples in which the system outputs full attitude and the true simulation error exceeds $10^\circ$.
+\subsection{Fault-Tolerant Operating Behaviour}
+
+The final temporal simulations test whether the system responds differently to different sensor failures rather than continuing to return a full attitude in every condition. Table~\ref{tab:final-results} summarizes the post-fault portion of the continuous trajectory. The Unsafe $>10^\circ$ percentage is the fraction of all post-fault samples in which the system outputs full attitude and the true simulation error exceeds $10^\circ$.
 
 \begin{table}[H]
 \centering
@@ -598,13 +598,15 @@ Combined fault & 5.0\% & 2.6\% & 92.4\% & 7.6\% & 9.534 & 10.854 & 0.67 \\
 \end{figure}
 }{}
 
-For a persistent Sun-sensor failure, the system spends 83.1\% of the post-fault sequence in \texttt{RECONFIGURED} mode and still provides full attitude in 97.0\% of samples. The mean error of the accepted full-attitude outputs is only \SI{2.542}{\degree}, compared with approximately \SI{18.9}{\degree} for the earlier unreconfigured static fault case.
+The Sun-sensor and magnetic faults produce deliberately different responses. With a persistent Sun-sensor failure, the system spends 83.1\% of the post-fault sequence in \texttt{RECONFIGURED} mode and still provides full attitude in 97.0\% of the samples. The mean error of the accepted full-attitude outputs is \SI{2.542}{\degree}, compared with approximately \SI{18.9}{\degree} for the unreconfigured static fault case. The system therefore retains full attitude determination when enough sensing information remains available.
 
-For the \SI{7.5}{\micro\tesla} magnetic disturbance, the system enters \texttt{SUN\_SAFE} in 92.3\% of post-fault samples. The combined Sun and magnetic fault produces essentially the same safe-mode behaviour, with 92.4\% \texttt{SUN\_SAFE}. This demonstrates the intended graceful degradation: when the magnetic measurement becomes unreliable, the system normally stops reporting full three-dimensional attitude instead of continuing to trust a corrupted TRIAD solution.
+The magnetic disturbance requires a different response. With a \SI{7.5}{\micro\tesla} disturbance, the system enters \texttt{SUN\_SAFE} in 92.3\% of post-fault samples and provides full attitude in only 7.7\%. The combined Sun and magnetic fault produces nearly the same safe-mode behaviour, with 92.4\% of samples in \texttt{SUN\_SAFE}. In these cases the system intentionally withholds most full-attitude outputs because the second absolute reference vector is no longer considered trustworthy.
 
-\subsection{Fuzzy Confidence}
+These results demonstrate the intended graceful-degradation behaviour: a recoverable Sun-sensor fault leads mainly to estimator reconfiguration, whereas an unreliable magnetic reference leads mainly to Sun-only operation.
 
-The fuzzy score remains a confidence indicator rather than the hard safety decision. Figure~\ref{fig:fuzzy-final} shows the mean post-fault score for the four final scenarios.
+\subsection{Fuzzy Confidence Response}
+
+The fuzzy score is evaluated separately from the hard safety decision to determine whether it provides a useful indication of deteriorating sensing conditions. Figure~\ref{fig:fuzzy-final} shows the mean post-fault score for the four final scenarios.
 
 \IfFileExists{figures/final_fuzzy_confidence.png}{
 \begin{figure}[htbp]
@@ -615,9 +617,9 @@ The fuzzy score remains a confidence indicator rather than the hard safety decis
 \end{figure}
 }{}
 
-The mean confidence follows the expected ordering: 80.70\% in the healthy case, 66.46\% with a Sun-sensor fault, 40.22\% under magnetic disturbance, and 31.41\% for the combined fault. The score therefore communicates progressively worsening sensing conditions while the explicit fault logic determines whether the estimator should remain normal, reconfigure, or suppress full attitude output.
+The mean confidence follows the expected ordering: 80.70\% in the healthy case, 66.46\% with a Sun-sensor fault, 40.22\% under magnetic disturbance, and 31.41\% for the combined fault. The score therefore decreases as the sensing condition becomes more severe and provides an interpretable indication of measurement quality. The explicit fault logic still determines whether the estimator remains normal, reconfigures, or suppresses full attitude output.
 
-The final results show that the main benefit of the proposed architecture is not merely a lower average error. The system changes its behaviour according to measurement quality: it recovers most of the lost performance after a Sun-sensor failure, remembers confirmed failures over time, and deliberately degrades to Sun-only sensing when the magnetic reference becomes unreliable.
+Overall, the results show three distinct benefits of the proposed architecture. Sun-sensor failures can be detected and compensated while retaining full attitude determination, persistent fault memory reduces unsafe outputs as illumination changes, and magnetic disturbances trigger graceful degradation to Sun-only sensing rather than continued use of an unreliable full-attitude solution. The fuzzy reliability score follows the same deterioration in sensing quality while remaining secondary to the hard fault-handling logic.
 
 \clearpage
 
